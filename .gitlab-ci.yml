@@ -28,3 +28,13 @@ workflow:
     - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+
+
+ci_smoke_test:
+  stage: build
+  script:
+    - echo "CI pipeline triggered successfully"
+    - echo "Runner hostname:"
+    - hostname
+    - echo "Working directory:"
+    - pwd
