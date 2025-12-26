@@ -29,7 +29,7 @@ workflow:
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
-
+# Smoke test job to verify CI setup - to be removed later
 ci_smoke_test:
   stage: build
   script:
