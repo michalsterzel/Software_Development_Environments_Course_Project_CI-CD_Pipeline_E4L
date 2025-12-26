@@ -1,0 +1,41 @@
+# Backend CI Jobs
+# Jabin - Backend, Database, Staging
+
+# Backend build and test
+backend_build:
+  stage: build
+  image: openjdk:17-slim
+  script:
+    - cd backend
+    - echo "Building backend..."
+    # - ./gradlew build --no-daemon
+  artifacts:
+    paths:
+      - backend/build/
+    expire_in: 1 hour
+
+backend_unit_test:
+  stage: unit_test
+  image: openjdk:17-slim
+  script:
+    - cd backend
+    - echo "Running backend unit tests..."
+    # - ./gradlew test --no-daemon
+  dependencies:
+    - backend_build
+
+# Build backend Docker image
+backend_image:
+  stage: build
+  image: docker:24-cli
+  services:
+    - docker:24-dind
+  script:
+    - cd backend
+    - echo "Building backend Docker image..."
+    - docker build -t localhost:5050/backend:${CI_COMMIT_SHA} .
+    - docker push localhost:5050/backend:${CI_COMMIT_SHA}
+  dependencies:
+    - backend_build
+  needs:
+    - backend_unit_test

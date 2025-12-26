@@ -1,0 +1,30 @@
+# Root GitLab CI/CD Pipeline Configuration
+# Orchestrates the entire CI/CD flow
+
+stages:
+  - build
+  - unit_test
+  - deploy_staging
+  - integration_test
+  - deploy_prod
+
+# Include team-specific CI configurations
+include:
+  - local: ".ci/backend.yml"
+  - local: ".ci/frontend.yml"
+  - local: ".ci/deploy.yml"
+
+# Default configuration
+default:
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+
+# Pipeline rules
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'

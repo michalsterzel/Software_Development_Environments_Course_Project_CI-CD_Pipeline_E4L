@@ -1,0 +1,173 @@
+---
+# Ansible Playbook for VM Provisioning
+# Michal - Infrastructure & CI/CD
+
+- name: Provision DevOps VM
+  hosts: all
+  become: true
+
+  vars:
+    docker_compose_version: "2.23.0"
+    gitlab_external_url: "http://{{ ansible_default_ipv4.address }}"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - git
+        state: present
+
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add vagrant user to docker group
+      user:
+        name: vagrant
+        groups: docker
+        append: yes
+
+    - name: Download Docker Compose
+      get_url:
+        url: "https://github.com/docker/compose/releases/download/v{{ docker_compose_version }}/docker-compose-linux-x86_64"
+        dest: /usr/local/bin/docker-compose
+        mode: '0755'
+
+    - name: Install PostgreSQL (as DB engine)
+      apt:
+        name:
+          - postgresql
+          - postgresql-contrib
+          - python3-psycopg2
+        state: present
+
+    - name: Start and enable PostgreSQL
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Install GitLab CE dependencies
+      apt:
+        name:
+          - curl
+          - openssh-server
+          - ca-certificates
+          - tzdata
+          - perl
+        state: present
+
+    - name: Add GitLab package repository
+      shell: |
+        curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | bash
+      args:
+        creates: /etc/apt/sources.list.d/gitlab_gitlab-ce.list
+
+    - name: Install GitLab CE
+      apt:
+        name: gitlab-ce
+        state: present
+      environment:
+        EXTERNAL_URL: "{{ gitlab_external_url }}"
+
+    - name: Configure GitLab external URL in gitlab.rb
+      lineinfile:
+        path: /etc/gitlab/gitlab.rb
+        regexp: '^external_url'
+        line: 'external_url "http://localhost:8080"'
+        state: present
+
+    - name: Configure GitLab nginx listen port
+      lineinfile:
+        path: /etc/gitlab/gitlab.rb
+        regexp: "^nginx\\['listen_port'\\]"
+        line: "nginx['listen_port'] = 80"
+        state: present
+
+    - name: Disable GitLab nginx HTTPS
+      lineinfile:
+        path: /etc/gitlab/gitlab.rb
+        regexp: "^nginx\\['listen_https'\\]"
+        line: "nginx['listen_https'] = false"
+        state: present
+
+    - name: Reconfigure GitLab to apply settings
+      command: gitlab-ctl reconfigure
+      register: gitlab_reconfigure
+      changed_when: gitlab_reconfigure.rc == 0
+
+    - name: Restart GitLab services
+      command: gitlab-ctl restart
+      register: gitlab_restart
+      changed_when: gitlab_restart.rc == 0
+      failed_when: false
+      ignore_errors: yes
+
+    - name: Wait for GitLab to be ready
+      uri:
+        url: "http://localhost"
+        status_code: 200
+        timeout: 5
+      register: gitlab_health
+      until: gitlab_health.status == 200
+      retries: 30
+      delay: 10
+      ignore_errors: yes
+
+    - name: Install GitLab Runner
+      shell: |
+        curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | bash
+        apt-get install -y gitlab-runner
+      args:
+        creates: /usr/bin/gitlab-runner
+
+    - name: Create GitLab Runner user in docker group
+      user:
+        name: gitlab-runner
+        groups: docker
+        append: yes
+
+    - name: Display completion message
+      debug:
+        msg: |
+          ============================================
+          VM Provisioning Complete!
+          ============================================
+          Access GitLab at: {{ gitlab_external_url }}
+          
+          Next steps:
+          1. SSH into the VM: vagrant ssh
+          2. Get GitLab root password: sudo cat /etc/gitlab/initial_root_password
+          3. Login to GitLab and create your project
+          4. Register GitLab Runner with your project
+          ============================================

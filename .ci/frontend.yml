@@ -1,0 +1,44 @@
+# Frontend CI Jobs
+# Maksym - Frontend, Dev Environment
+
+# Frontend build and test
+frontend_build:
+  stage: build
+  image: node:18-alpine
+  script:
+    - cd frontend
+    - echo "Installing dependencies..."
+    # - npm ci
+    - echo "Building frontend..."
+    # - npm run build
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 hour
+
+frontend_unit_test:
+  stage: unit_test
+  image: node:18-alpine
+  script:
+    - cd frontend
+    - echo "Running frontend unit tests..."
+    # - npm ci
+    # - npm run test
+  dependencies:
+    - frontend_build
+
+# Build frontend Docker image
+frontend_image:
+  stage: build
+  image: docker:24-cli
+  services:
+    - docker:24-dind
+  script:
+    - cd frontend
+    - echo "Building frontend Docker image..."
+    - docker build -t localhost:5050/frontend:${CI_COMMIT_SHA} .
+    - docker push localhost:5050/frontend:${CI_COMMIT_SHA}
+  dependencies:
+    - frontend_build
+  needs:
+    - frontend_unit_test

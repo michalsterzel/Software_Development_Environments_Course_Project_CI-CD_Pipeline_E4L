@@ -1,0 +1,49 @@
+# Staging Environment Docker Compose
+# Uses images built by CI
+
+version: '3.8'
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-localhost:5050/backend:latest}
+    ports:
+      - "<STAGE_BE_HOST_PORT>:<BE_CONTAINER_PORT>"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=<DB_CONTAINER_PORT>
+      - DB_NAME=e4l_staging
+    depends_on:
+      - db
+    networks:
+      - staging-network
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-localhost:5050/frontend:latest}
+    ports:
+      - "<STAGE_FE_HOST_PORT>:<FE_CONTAINER_PORT>"
+    environment:
+      - BACKEND_URL=http://backend:<BE_CONTAINER_PORT>
+    depends_on:
+      - backend
+    networks:
+      - staging-network
+
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "<STAGE_DB_HOST_PORT>:<DB_CONTAINER_PORT>"
+    environment:
+      - POSTGRES_DB=e4l_staging
+      - POSTGRES_USER=staginguser
+      - POSTGRES_PASSWORD=stagingpass
+    volumes:
+      - staging-db-data:/var/lib/postgresql/data
+    networks:
+      - staging-network
+
+volumes:
+  staging-db-data:
+
+networks:
+  staging-network:
+    driver: bridge

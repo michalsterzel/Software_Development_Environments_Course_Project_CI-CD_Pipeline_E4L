@@ -1,0 +1,52 @@
+# Production Environment Docker Compose
+# Uses same images that passed staging
+
+version: '3.8'
+
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-localhost:5050/backend:latest}
+    ports:
+      - "<PROD_BE_HOST_PORT>:<BE_CONTAINER_PORT>"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=<DB_CONTAINER_PORT>
+      - DB_NAME=e4l_prod
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks:
+      - prod-network
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-localhost:5050/frontend:latest}
+    ports:
+      - "<PROD_FE_HOST_PORT>:<FE_CONTAINER_PORT>"
+    environment:
+      - BACKEND_URL=http://backend:<BE_CONTAINER_PORT>
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - prod-network
+
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "<PROD_DB_HOST_PORT>:<DB_CONTAINER_PORT>"
+    environment:
+      - POSTGRES_DB=e4l_prod
+      - POSTGRES_USER=produser
+      - POSTGRES_PASSWORD=prodpass
+    volumes:
+      - prod-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - prod-network
+
+volumes:
+  prod-db-data:
+
+networks:
+  prod-network:
+    driver: bridge

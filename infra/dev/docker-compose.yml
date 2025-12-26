@@ -1,0 +1,53 @@
+# Dev Environment Docker Compose
+# Manual start: docker compose -f infra/dev/docker-compose.yml up -d
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    ports:
+      - "<DEV_BE_HOST_PORT>:<BE_CONTAINER_PORT>"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=<DB_CONTAINER_PORT>
+      - DB_NAME=<DEV_DB_NAME>
+    depends_on:
+      - db
+    networks:
+      - dev-network
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "<DEV_FE_HOST_PORT>:<FE_CONTAINER_PORT>"
+    environment:
+      - BACKEND_URL=http://backend:<BE_CONTAINER_PORT>
+    depends_on:
+      - backend
+    networks:
+      - dev-network
+
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "<DEV_DB_HOST_PORT>:<DB_CONTAINER_PORT>"
+    environment:
+      - POSTGRES_DB=<DEV_DB_NAME>
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=devpass
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+    networks:
+      - dev-network
+
+volumes:
+  dev-db-data:
+
+networks:
+  dev-network:
+    driver: bridge
