@@ -336,6 +336,41 @@ line: 'external_url "http://192.168.56.10"'
 
 ---
 
+## Change 9: Comment out real deployment jobs during dummy test
+
+**File:** `.ci/deploy.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** GitLab CI error - "deploy_staging job: undefined need: backend_image" after commenting out backend/frontend includes
+
+**Problem:**
+- When backend.yml and frontend.yml are commented out, the `backend_image` and `frontend_image` jobs don't exist
+- But `deploy_staging` job (in deploy.yml) has `needs: - backend_image` and `needs: - frontend_image`
+- Pipeline fails because it can't find those jobs
+
+**Solution:**
+Commented out the real deployment jobs in deploy.yml:
+- `deploy_staging` (depends on backend_image, frontend_image)
+- `test_staging` (depends on deploy_staging)
+- `deploy_prod` (depends on test_staging)
+
+These are being replaced by the dummy equivalents for testing:
+- `deploy_staging_dummy` (depends on dummy_backend_image, dummy_frontend_image)
+- `integration_test_dummy` (depends on deploy_staging_dummy)
+- `deploy_prod_dummy` (depends on integration_test_dummy)
+
+**Why:**
+- For dummy test validation, we only want to run dummy jobs
+- Once backend/frontend teams implement code, uncomment these real jobs
+- The dummy jobs test the same infrastructure with placeholder images
+
+**Removal Instructions:**
+When backend.yml and frontend.yml are uncommented:
+1. Uncomment deploy_staging, test_staging, deploy_prod in deploy.yml
+2. Comment out or remove dummy jobs from .gitlab-ci.yml
+
+---
+
 **Last Updated:** December 29, 2025
-**Changes Tracked:** 8
+**Changes Tracked:** 9
 **Outstanding Issues:** None

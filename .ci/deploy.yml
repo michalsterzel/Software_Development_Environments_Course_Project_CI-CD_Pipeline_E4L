@@ -2,42 +2,45 @@
 # Michal - Infrastructure, CI/CD, Orchestration
 
 # Deploy to staging
-deploy_staging:
-  stage: deploy_staging
-  image: docker:24-cli
-  services:
-    - docker:24-dind
-  script:
-    - apk add --no-cache bash curl
-    - chmod +x ci/deploy_staging.sh
-    - ./ci/deploy_staging.sh
-  needs:
-    - backend_image
-    - frontend_image
-  environment:
-    name: staging
+# TEMPORARILY COMMENTED OUT FOR DUMMY TEST
+# deploy_staging:
+#   stage: deploy_staging
+#   image: docker:24-cli
+#   services:
+#     - docker:24-dind
+#   script:
+#     - apk add --no-cache bash curl
+#     - chmod +x ci/deploy_staging.sh
+#     - ./ci/deploy_staging.sh
+#   needs:
+#     - backend_image
+#     - frontend_image
+#   environment:
+#     name: staging
 
 # Run integration tests on staging
-test_staging:
-  stage: integration_test
-  image: alpine:latest
-  script:
-    - apk add --no-cache bash curl
-    - chmod +x ci/test_staging.sh
-    - ./ci/test_staging.sh
-  needs:
-    - deploy_staging
+# TEMPORARILY COMMENTED OUT FOR DUMMY TEST
+# test_staging:
+#   stage: integration_test
+#   image: alpine:latest
+#   script:
+#     - apk add --no-cache bash curl
+#     - chmod +x ci/test_staging.sh
+#     - ./ci/test_staging.sh
+#   needs:
+#     - deploy_staging
 
 # Deploy to production (only if staging passes)
-deploy_prod:
-  stage: deploy_prod
-  image: docker:24-cli
-  services:
-    - docker:24-dind
-  script:
-    - apk add --no-cache bash curl
-    - chmod +x ci/deploy_prod.sh
-    - ./ci/deploy_prod.sh
+# TEMPORARILY COMMENTED OUT FOR DUMMY TEST
+# deploy_prod:
+#   stage: deploy_prod
+#   image: docker:24-cli
+#   services:
+#     - docker:24-dind
+#   script:
+#     - apk add --no-cache bash curl
+#     - chmod +x ci/deploy_prod.sh
+#     - ./ci/deploy_prod.sh
   needs:
     - test_staging
   environment:
