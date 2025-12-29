@@ -165,7 +165,8 @@ deploy_staging_dummy:
   stage: deploy_staging
   image: docker:24-cli
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
   before_script:
     - apk add --no-cache bash curl
   script:
@@ -221,7 +222,8 @@ deploy_prod_dummy:
   stage: deploy_prod
   image: docker:24-cli
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
   before_script:
     - apk add --no-cache bash curl
   script:

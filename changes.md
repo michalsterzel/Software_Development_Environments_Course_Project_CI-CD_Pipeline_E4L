@@ -447,3 +447,5 @@ variables:
 - Applied to both dummy_backend_image and dummy_frontend_image jobs
 
 **Impact:** Docker can now login, tag, and push to the HTTP registry without HTTPS errors.
+
+**Extension:** Also applied to deploy_staging_dummy and deploy_prod_dummy jobs, as `docker compose pull` encounters the same HTTPS issue when pulling images from the insecure registry.
