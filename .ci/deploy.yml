@@ -1,21 +1,20 @@
 # Deployment CI Jobs
 # Michal - Infrastructure, CI/CD, Orchestration
-
-# DUMMY TEST MODE: Real deployment jobs are disabled
-# These will be re-enabled once backend.yml and frontend.yml are uncommented in .gitlab-ci.yml
 #
-# Real jobs that are temporarily disabled:
+# DUMMY TEST MODE: This file is not included during dummy test phase.
+# Real deployment jobs are disabled during dummy test to avoid dependencies on backend/frontend.
+#
+# These jobs will be restored once backend.yml and frontend.yml are uncommented:
 # - deploy_staging (depends on backend_image, frontend_image)
-# - test_staging (depends on deploy_staging)
+# - test_staging (depends on deploy_staging)  
 # - deploy_prod (depends on test_staging)
 #
-# Once backend and frontend teams implement real images:
+# During dummy test phase:
+# - The .ci/deploy.yml include is commented out in .gitlab-ci.yml
+# - Only dummy jobs in .gitlab-ci.yml are executed
+# - Dummy jobs test infrastructure with nginx:alpine placeholder images
+#
+# To restore real deployment jobs:
 # 1. Uncomment .ci/backend.yml and .ci/frontend.yml in .gitlab-ci.yml
-# 2. Uncomment the jobs below in this file
+# 2. Uncomment .ci/deploy.yml in .gitlab-ci.yml
 # 3. Comment out or remove dummy jobs from .gitlab-ci.yml
-
-# Placeholder: Real jobs will go here
-# This file intentionally left with minimal content during dummy test phase
-
-    name: production
-  when: manual  # Require manual approval for production deployment

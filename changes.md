@@ -336,63 +336,46 @@ line: 'external_url "http://192.168.56.10"'
 
 ---
 
-## Change 9: Fix deploy.yml to prevent YAML parsing errors
+## Change 9: Remove deploy.yml from includes during dummy test phase
 
-**File:** `.ci/deploy.yml`
+**File:** `.gitlab-ci.yml` and `.ci/deploy.yml`
 **Date:** December 29, 2025
 **Status:** ✅ Complete
 **Issue:** GitLab CI error - "jobs needs config should implement the script:, run:, or trigger: keyword"
 
 **Problem:**
-- Initially tried to comment out the real deployment jobs within the YAML file
-- This left orphaned YAML syntax that broke the file structure
-- GitLab YAML parser found invalid job definitions with `needs:` but no job body
+- The `.ci/deploy.yml` file had orphaned YAML syntax that couldn't be parsed
+- Even though content was mostly comments, the broken YAML structure remained
+- GitLab CI includes the file and tries to parse it, finding invalid job definitions
 
 **Solution:**
-Replaced the entire file with placeholder documentation instead of commented-out jobs:
-```yaml
-# Placeholder: Real jobs will go here
-# This file intentionally left with minimal content during dummy test phase
-```
+1. **Commented out the deploy.yml include** in `.gitlab-ci.yml`:
+   ```yaml
+   include:
+     # - local: ".ci/deploy.yml"    # Commented out during dummy test
+   ```
 
-Added clear instructions on how to restore the real jobs once backend/frontend are ready.
+2. **Cleaned up deploy.yml** to contain only documentation:
+   ```yaml
+   # This file is not included during dummy test phase
+   # Real deployment jobs are disabled to avoid dependencies on backend/frontend
+   ```
 
 **Why:**
-- Comments in YAML files must be complete lines (not partial job definitions)
-- GitLab includes the entire deploy.yml file, so broken YAML anywhere breaks the whole pipeline
-- Better to have an empty placeholder file with documentation than broken YAML
+- Dummy test only needs dummy jobs in `.gitlab-ci.yml`
+- No deployment jobs are needed while testing with nginx placeholder images
+- Completely removing the include prevents any YAML parsing errors
+- Keeps the real jobs in deploy.yml as documentation for later
 
-**To Restore Real Deployment Jobs:**
-When ready to use real backend/frontend images:
-
+**To Re-enable for Real Backend/Frontend:**
+When backend.yml and frontend.yml are ready:
 1. Uncomment in `.gitlab-ci.yml`:
    ```yaml
    - local: ".ci/backend.yml"
    - local: ".ci/frontend.yml"
+   - local: ".ci/deploy.yml"
    ```
-
-2. Restore deploy.yml with real job definitions:
-   ```yaml
-   deploy_staging:
-     stage: deploy_staging
-     needs:
-       - backend_image
-       - frontend_image
-     # ... rest of job config
-   
-   test_staging:
-     stage: integration_test
-     needs:
-       - deploy_staging
-     # ... rest of job config
-   
-   deploy_prod:
-     stage: deploy_prod
-     needs:
-       - test_staging
-     # ... rest of job config
-   ```
-
+2. Add real job definitions back to `.ci/deploy.yml`
 3. Comment out or remove dummy jobs from `.gitlab-ci.yml`
 
 ---
