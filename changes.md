@@ -102,7 +102,7 @@ needs:
 
 ---
 
-## Change 3: Fix dummy_backend_image script syntax error
+## Change 3: Fix dummy_backend_image script syntax error (2nd attempt)
 
 **File:** `.gitlab-ci.yml`
 **Date:** December 29, 2025
@@ -110,49 +110,39 @@ needs:
 **Issue:** GitLab CI error - "jobs:dummy_backend_image:script config should be a string or a nested array of strings up to 10 levels deep"
 
 **Problem:**
-- Initial fix used double quotes which GitLab YAML parser had trouble with
-- The docker tag and push commands had improperly escaped variables
+- YAML parser was having issues with variable expansion in the script
+- First attempted fix with unbraced variables didn't work
 
 **Solution:**
-Removed quotes and used simple variable syntax without braces for cleaner YAML parsing:
+Switched back to using braced variables `${VAR}` which is the standard GitLab CI syntax:
 ```yaml
-# BEFORE (problematic)
-- docker tag nginx:alpine "${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
-- docker push "${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
-
-# AFTER (fixed)
-- docker tag nginx:alpine $CI_REGISTRY_IMAGE/e4l-backend:dummy
-- docker push $CI_REGISTRY_IMAGE/e4l-backend:dummy
+docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
+docker push ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
 ```
 
-The shell will properly expand `$CI_REGISTRY_IMAGE` without additional quoting needed.
+The braced variable syntax is the correct GitLab CI convention and should properly expand in all contexts.
 
 Also applied the same fix to `dummy_frontend_image` job for consistency.
 
 **Why:**
-- GitLab CI variables don't need to be in braces when used in simple command arguments
-- Using `$VAR` instead of `${VAR}` with quotes produces cleaner YAML that the parser handles better
-- The shell will still correctly substitute the variable value
+- `${CI_REGISTRY_IMAGE}` is the correct GitLab CI variable expansion syntax
+- GitLab's YAML parser expects this format for proper variable substitution
+- This is the standard across all GitLab CI documentation
 
 ---
 
-## Change 4: Fix dummy_frontend_image script syntax error
+## Change 4: Fix dummy_frontend_image script syntax error (2nd attempt)
 
 **File:** `.gitlab-ci.yml`
 **Date:** December 29, 2025
 **Status:** ✅ Complete
-**Issue:** Same as dummy_backend_image (preventive fix)
+**Issue:** Same as dummy_backend_image
 
 **Solution:**
-Applied same variable syntax fix to docker tag and push commands:
+Applied same fix using proper braced variable syntax:
 ```yaml
-# BEFORE (problematic)
-- docker tag nginx:alpine "${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
-- docker push "${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
-
-# AFTER (fixed)
-- docker tag nginx:alpine $CI_REGISTRY_IMAGE/e4l-frontend:dummy
-- docker push $CI_REGISTRY_IMAGE/e4l-frontend:dummy
+docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
+docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
 ```
 
 ---
