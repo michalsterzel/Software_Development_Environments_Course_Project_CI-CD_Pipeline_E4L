@@ -1,45 +1,76 @@
+# ============================================================
 # Staging Environment Docker Compose
-# Uses images built by CI
+# ============================================================
+# Owner: Michal (Infrastructure & CI/CD)
+# Backend Support: Jabin
+#
+# PURPOSE:
+# Production-like environment for integration testing.
+# Deployed automatically by CI/CD pipeline after successful builds.
+#
+# This environment uses Docker images built and pushed by the CI pipeline.
+# Images are pulled from GitLab Container Registry.
+#
+# PORT ASSIGNMENTS:
+# - Backend:  host 8081 → container 8080
+# - Frontend: host 3001 → container 80
+# - MySQL:    host 3307 → container 3306
+#
+# DATABASE:
+# Separate staging database: e4l_staging
+# Isolated from dev and production databases.
+# ============================================================
 
 version: '3.8'
 
 services:
   backend:
-    image: ${BACKEND_IMAGE:-localhost:5050/backend:latest}
+    # Image is set via CI_REGISTRY_IMAGE environment variable
+    # Format: registry.example.com/namespace/project/backend:commit-sha
+    image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/backend:latest}
     ports:
-      - "<STAGE_BE_HOST_PORT>:<BE_CONTAINER_PORT>"
+      - "8081:8080"
     environment:
       - DB_HOST=db
-      - DB_PORT=<DB_CONTAINER_PORT>
+      - DB_PORT=3306
       - DB_NAME=e4l_staging
+      - DB_USER=staginguser
+      - DB_PASSWORD=stagingpass
+      # Backend team: Ensure CI/CD variables are configured in GitLab
+      # (JWT_SECRET, SIGNATURE_KEY, ADMIN_EMAIL, etc.)
     depends_on:
       - db
     networks:
       - staging-network
+    restart: on-failure
 
   frontend:
-    image: ${FRONTEND_IMAGE:-localhost:5050/frontend:latest}
+    # Image is set via CI_REGISTRY_IMAGE environment variable
+    image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/frontend:latest}
     ports:
-      - "<STAGE_FE_HOST_PORT>:<FE_CONTAINER_PORT>"
+      - "3001:80"
     environment:
-      - BACKEND_URL=http://backend:<BE_CONTAINER_PORT>
+      - BACKEND_URL=http://backend:8080
     depends_on:
       - backend
     networks:
       - staging-network
+    restart: on-failure
 
   db:
-    image: postgres:15-alpine
+    image: mysql:8.0
     ports:
-      - "<STAGE_DB_HOST_PORT>:<DB_CONTAINER_PORT>"
+      - "3307:3306"
     environment:
-      - POSTGRES_DB=e4l_staging
-      - POSTGRES_USER=staginguser
-      - POSTGRES_PASSWORD=stagingpass
+      - MYSQL_DATABASE=e4l_staging
+      - MYSQL_USER=staginguser
+      - MYSQL_PASSWORD=stagingpass
+      - MYSQL_ROOT_PASSWORD=rootpass_staging
     volumes:
-      - staging-db-data:/var/lib/postgresql/data
+      - staging-db-data:/var/lib/mysql
     networks:
       - staging-network
+    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   staging-db-data:

@@ -1,29 +1,58 @@
+# ============================================================
 # Production Environment Docker Compose
-# Uses same images that passed staging
+# ============================================================
+# Owner: Michal (Infrastructure & CI/CD)
+#
+# PURPOSE:
+# Live production environment serving real users.
+# Deployed ONLY after staging deployment succeeds and integration tests pass.
+#
+# This environment uses the SAME Docker images that passed staging tests.
+# No rebuilds occur in production - images are promoted from staging.
+#
+# PORT ASSIGNMENTS:
+# - Backend:  host 8082 -> container 8080
+# - Frontend: host 3002 -> container 80
+# - MySQL:    host 3308 -> container 3306
+#
+# DATABASE:
+# Separate production database: e4l_prod
+# Isolated from dev and staging databases.
+#
+# DEPLOYMENT:
+# Manual approval required (configured in .ci/deploy.yml)
+# ============================================================
 
 version: '3.8'
 
 services:
   backend:
-    image: ${BACKEND_IMAGE:-localhost:5050/backend:latest}
+    # Image is set via CI_REGISTRY_IMAGE environment variable
+    # Same image that passed staging tests
+    image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/backend:latest}
     ports:
-      - "<PROD_BE_HOST_PORT>:<BE_CONTAINER_PORT>"
+      - "8082:8080"
     environment:
       - DB_HOST=db
-      - DB_PORT=<DB_CONTAINER_PORT>
+      - DB_PORT=3306
       - DB_NAME=e4l_prod
+      - DB_USER=produser
+      - DB_PASSWORD=prodpass
+      # Backend team: Ensure production CI/CD variables are configured
+      # Use different secrets than staging for security
     depends_on:
       - db
-    restart: unless-stopped
+    restart: unless-stopped  # Auto-restart on failure (production resilience)
     networks:
       - prod-network
 
   frontend:
-    image: ${FRONTEND_IMAGE:-localhost:5050/frontend:latest}
+    # Same image that passed staging tests
+    image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/frontend:latest}
     ports:
-      - "<PROD_FE_HOST_PORT>:<FE_CONTAINER_PORT>"
+      - "3002:80"
     environment:
-      - BACKEND_URL=http://backend:<BE_CONTAINER_PORT>
+      - BACKEND_URL=http://backend:8080
     depends_on:
       - backend
     restart: unless-stopped
@@ -31,18 +60,20 @@ services:
       - prod-network
 
   db:
-    image: postgres:15-alpine
+    image: mysql:8.0
     ports:
-      - "<PROD_DB_HOST_PORT>:<DB_CONTAINER_PORT>"
+      - "3308:3306"
     environment:
-      - POSTGRES_DB=e4l_prod
-      - POSTGRES_USER=produser
-      - POSTGRES_PASSWORD=prodpass
+      - MYSQL_DATABASE=e4l_prod
+      - MYSQL_USER=produser
+      - MYSQL_PASSWORD=prodpass
+      - MYSQL_ROOT_PASSWORD=rootpass_prod
     volumes:
-      - prod-db-data:/var/lib/postgresql/data
+      - prod-db-data:/var/lib/mysql
     restart: unless-stopped
     networks:
       - prod-network
+    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   prod-db-data:

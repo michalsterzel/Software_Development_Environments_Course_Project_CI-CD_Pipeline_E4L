@@ -1,20 +1,58 @@
+# ============================================================
 # Root GitLab CI/CD Pipeline Configuration
-# Orchestrates the entire CI/CD flow
+# Infrastructure Owner: Michal
+# ============================================================
+# This file orchestrates the entire CI/CD flow across all teams.
+# It defines pipeline stages and includes team-specific job definitions.
+#
+# OWNERSHIP BOUNDARIES:
+# - This file: Michal (Infrastructure & CI/CD)
+# - .ci/backend.yml: Jabin (Backend team)
+# - .ci/frontend.yml: Maksym (Frontend team)
+# - .ci/deploy.yml: Michal (Deployment orchestration)
+#
+# DO NOT modify job logic in included files unless you own that component.
+# ============================================================
+
+# ============================================================
+# PIPELINE STAGES
+# ============================================================
+# Stages execute in order. Jobs in the same stage run in parallel.
+# Failure in any stage blocks progression to the next stage.
+#
+# Stage ownership:
+# - build: Backend & Frontend teams (compile, install dependencies)
+# - unit_test: Backend & Frontend teams (run unit tests)
+# - image: Backend & Frontend teams (build Docker images)
+# - deploy_staging: Infrastructure (deploy to staging environment)
+# - integration_test: Infrastructure (validate staging deployment)
+# - deploy_prod: Infrastructure (deploy to production, manual gate)
+# ============================================================
 
 stages:
-  - build
-  - unit_test
-  - deploy_staging
-  - integration_test
-  - deploy_prod
+  - build          # Compile application code, install dependencies
+  - unit_test      # Run unit tests (must pass before images are built)
+  - image          # Build and push Docker images to GitLab Container Registry
+  - deploy_staging # Deploy images to staging environment
+  - integration_test # Run integration tests against staging
+  - deploy_prod    # Deploy to production (requires manual approval)
 
-# Include team-specific CI configurations
+# ============================================================
+# INCLUDE TEAM-SPECIFIC CI CONFIGURATIONS
+# ============================================================
+# Each team maintains their own CI job definitions.
+# Infrastructure orchestrates when jobs run via stage dependencies.
+
 include:
-  - local: ".ci/backend.yml"
-  - local: ".ci/frontend.yml"
-  - local: ".ci/deploy.yml"
+  - local: ".ci/backend.yml"   # Backend build, test, and image jobs (Jabin)
+  - local: ".ci/frontend.yml"  # Frontend build, test, and image jobs (Maksym)
+  - local: ".ci/deploy.yml"    # Deployment and integration test jobs (Michal)
 
-# Default configuration
+# ============================================================
+# DEFAULT CONFIGURATION
+# ============================================================
+# Applied to all jobs unless overridden
+
 default:
   retry:
     max: 2
@@ -22,19 +60,38 @@ default:
       - runner_system_failure
       - stuck_or_timeout_failure
 
-# Pipeline rules
+# ============================================================
+# PIPELINE EXECUTION RULES
+# ============================================================
+# Define when the pipeline should run
+
 workflow:
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
     - if: '$CI_COMMIT_BRANCH == "develop"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
-# Smoke test job to verify CI setup - to be removed later
+# ============================================================
+# SMOKE TEST (Infrastructure Validation)
+# ============================================================
+# Verifies GitLab Runner connectivity and basic CI setup.
+# Keep this job for infrastructure validation.
+# Does not block backend/frontend jobs.
+
 ci_smoke_test:
   stage: build
   script:
-    - echo "CI pipeline triggered successfully"
+    - echo "========================================"
+    - echo "CI Pipeline Smoke Test"
+    - echo "========================================"
+    - echo "Pipeline triggered successfully"
     - echo "Runner hostname:"
     - hostname
     - echo "Working directory:"
     - pwd
+    - echo "GitLab CI Variables available:"
+    - echo "CI_COMMIT_SHA = ${CI_COMMIT_SHA}"
+    - echo "CI_REGISTRY = ${CI_REGISTRY}"
+    - echo "CI_REGISTRY_IMAGE = ${CI_REGISTRY_IMAGE}"
+    - echo "========================================"
+  allow_failure: true  # Don't block pipeline if smoke test has issues

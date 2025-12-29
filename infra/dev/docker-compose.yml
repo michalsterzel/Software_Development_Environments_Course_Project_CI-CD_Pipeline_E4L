@@ -1,5 +1,21 @@
+# ============================================================
 # Dev Environment Docker Compose
+# ============================================================
+# Owner: Maksym (Frontend/Dev Environment)
+# Infrastructure Support: Michal
+#
+# PURPOSE:
+# Local development environment for developers.
 # Manual start: docker compose -f infra/dev/docker-compose.yml up -d
+#
+# This environment is NOT part of CI/CD pipeline.
+# It exists for local testing and development only.
+#
+# PORT ASSIGNMENTS:
+# - Backend:  host 8080 → container 8080
+# - Frontend: host 3000 → container 80
+# - MySQL:    host 3306 → container 3306
+# ============================================================
 
 version: '3.8'
 
@@ -9,11 +25,15 @@ services:
       context: ../../backend
       dockerfile: Dockerfile
     ports:
-      - "<DEV_BE_HOST_PORT>:<BE_CONTAINER_PORT>"
+      - "8080:8080"  # Spring Boot default port
     environment:
       - DB_HOST=db
-      - DB_PORT=<DB_CONTAINER_PORT>
-      - DB_NAME=<DEV_DB_NAME>
+      - DB_PORT=3306
+      - DB_NAME=e4l_dev
+      - DB_USER=devuser
+      - DB_PASSWORD=devpass
+      # Backend team: Add additional env vars as needed
+      # (JWT_SECRET, SIGNATURE_KEY, ADMIN_EMAIL, etc.)
     depends_on:
       - db
     networks:
@@ -24,26 +44,28 @@ services:
       context: ../../frontend
       dockerfile: Dockerfile
     ports:
-      - "<DEV_FE_HOST_PORT>:<FE_CONTAINER_PORT>"
+      - "3000:80"  # Nginx serves on port 80 inside container
     environment:
-      - BACKEND_URL=http://backend:<BE_CONTAINER_PORT>
+      - BACKEND_URL=http://backend:8080
     depends_on:
       - backend
     networks:
       - dev-network
 
   db:
-    image: postgres:15-alpine
+    image: mysql:8.0
     ports:
-      - "<DEV_DB_HOST_PORT>:<DB_CONTAINER_PORT>"
+      - "3306:3306"
     environment:
-      - POSTGRES_DB=<DEV_DB_NAME>
-      - POSTGRES_USER=devuser
-      - POSTGRES_PASSWORD=devpass
+      - MYSQL_DATABASE=e4l_dev
+      - MYSQL_USER=devuser
+      - MYSQL_PASSWORD=devpass
+      - MYSQL_ROOT_PASSWORD=rootpass
     volumes:
-      - dev-db-data:/var/lib/postgresql/data
+      - dev-db-data:/var/lib/mysql
     networks:
       - dev-network
+    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   dev-db-data:
