@@ -297,6 +297,45 @@ workflow:
 
 ---
 
+## Change 8: Fix GitLab external_url for runner connectivity
+
+**File:** `ansible/playbook.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Pipeline failing with "Failed to connect to localhost port 8080 after 0 ms: Could not connect to server"
+
+**Problem:**
+- GitLab external_url was set to `http://localhost:8080`
+- This address works from the **host machine** (port forwarding: guest 80 → host 8080)
+- But GitLab Runner running **inside the VM** cannot use localhost:8080
+- Inside the VM, port 8080 doesn't exist - GitLab runs on port 80
+- Runner tries to clone from `http://localhost:8080/root/e4l.git/` and fails
+
+**Solution:**
+Changed external_url to use the VM's IP address instead of localhost:
+```yaml
+# BEFORE
+line: 'external_url "http://localhost:8080"'
+
+# AFTER
+line: 'external_url "http://192.168.56.10"'
+```
+
+**Why This Works:**
+- The VM's private network IP is `192.168.56.10` (defined in Vagrantfile)
+- This IP is accessible from both:
+  - Inside the VM: Direct access to port 80 (GitLab)
+  - Host machine: Maps to port 8080 via port forwarding, or direct access to 192.168.56.10
+- Runner inside VM connects to `http://192.168.56.10:80` (port 80 is default HTTP)
+- Host can still access at `http://localhost:8080` (port forwarding) or `http://192.168.56.10`
+
+**Next Steps:**
+- Run `vagrant reload` to re-provision with new GitLab URL
+- GitLab will reconfigure with the correct external_url
+- Runner will now successfully clone from the correct Git URL
+
+---
+
 **Last Updated:** December 29, 2025
-**Changes Tracked:** 7
+**Changes Tracked:** 8
 **Outstanding Issues:** None

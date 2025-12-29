@@ -97,7 +97,8 @@
       lineinfile:
         path: /etc/gitlab/gitlab.rb
         regexp: '^external_url'
-        line: 'external_url "http://localhost:8080"'
+        line: 'external_url "http://192.168.56.10"'
+        # line: 'external_url "http://localhost:8080"'
         state: present
 
     - name: Configure GitLab nginx listen port
