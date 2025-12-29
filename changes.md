@@ -267,6 +267,36 @@ frontend_image:
 
 ---
 
+## Change 7: Add dummy-tests branch to workflow rules
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Pipeline not triggering when pushing to dummy-tests branch
+
+**Problem:**
+- The workflow rules only allowed pipelines on "main" and "develop" branches
+- Pushing to "dummy-tests" branch didn't trigger any pipeline
+- No validation or testing was happening
+
+**Solution:**
+Added "dummy-tests" branch to workflow rules:
+```yaml
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "dummy-tests"'  # Added this line
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+```
+
+**Why:**
+- GitLab CI only runs pipelines when workflow rules match
+- Adding the branch allows testing CI/CD changes on the dummy-tests branch
+- Without this, no pipeline validation occurs on this branch
+
+---
+
 **Last Updated:** December 29, 2025
-**Changes Tracked:** 6
+**Changes Tracked:** 7
 **Outstanding Issues:** None
