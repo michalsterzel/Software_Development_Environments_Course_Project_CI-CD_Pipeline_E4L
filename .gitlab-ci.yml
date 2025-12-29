@@ -58,8 +58,8 @@ variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
-  CI_REGISTRY: "192.168.56.10:5050"
-  CI_REGISTRY_IMAGE: "192.168.56.10:5050/root/e4l"
+  CI_REGISTRY: "http://192.168.56.10:5050"
+  CI_REGISTRY_IMAGE: "http://192.168.56.10:5050/root/e4l"
 
 default:
   retry:

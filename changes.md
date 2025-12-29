@@ -426,12 +426,12 @@ variables:
 - Runner inside the VM tried to push to `localhost:5050`, but registry is reachable at VM IP `192.168.56.10:5050`
 - Also needed authentication for the registry before pushing
 
-**Solution:**
-- Set registry variables to VM IP:
+**Solution (updated):**
+- Set registry variables to VM IP **with http scheme** (registry is not using TLS):
   ```yaml
   variables:
-    CI_REGISTRY: "192.168.56.10:5050"
-    CI_REGISTRY_IMAGE: "192.168.56.10:5050/root/e4l"
+    CI_REGISTRY: "http://192.168.56.10:5050"
+    CI_REGISTRY_IMAGE: "http://192.168.56.10:5050/root/e4l"
   ```
 - Added docker login to dummy image jobs:
   ```yaml
@@ -440,7 +440,7 @@ variables:
   ```
 
 **Why:**
-- Ensures the runner talks to the registry at the correct host/port
+- Ensures the runner talks to the registry at the correct host/port **and protocol**
 - Authenticates pushes using the built-in CI_JOB_TOKEN and gitlab-ci-token
 
-**Impact:** Dummy backend/frontend image jobs should now be able to tag and push successfully.
+**Impact:** Dummy backend/frontend image jobs should now be able to tag and push successfully without HTTPS errors.
