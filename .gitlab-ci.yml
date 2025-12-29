@@ -122,9 +122,9 @@ dummy_backend_image:
   script:
     - echo "Building dummy backend image..."
     - docker pull nginx:alpine
-    - docker tag nginx:alpine "${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
-    - docker push "${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
-    - echo "Dummy backend image pushed: ${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
+    - docker tag nginx:alpine $CI_REGISTRY_IMAGE/e4l-backend:dummy
+    - docker push $CI_REGISTRY_IMAGE/e4l-backend:dummy
+    - echo "Dummy backend image pushed: $CI_REGISTRY_IMAGE/e4l-backend:dummy"
 
 dummy_frontend_image:
   stage: image
@@ -134,9 +134,9 @@ dummy_frontend_image:
   script:
     - echo "Building dummy frontend image..."
     - docker pull nginx:alpine
-    - docker tag nginx:alpine "${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
-    - docker push "${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
-    - echo "Dummy frontend image pushed: ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
+    - docker tag nginx:alpine $CI_REGISTRY_IMAGE/e4l-frontend:dummy
+    - docker push $CI_REGISTRY_IMAGE/e4l-frontend:dummy
+    - echo "Dummy frontend image pushed: $CI_REGISTRY_IMAGE/e4l-frontend:dummy"
 
 # ============================================================
 # Dummy Staging Deployment

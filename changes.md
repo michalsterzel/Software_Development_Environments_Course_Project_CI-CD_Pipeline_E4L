@@ -110,27 +110,29 @@ needs:
 **Issue:** GitLab CI error - "jobs:dummy_backend_image:script config should be a string or a nested array of strings up to 10 levels deep"
 
 **Problem:**
-- The docker tag and push commands had unquoted variables in the image name
-- YAML parser couldn't properly interpret the variable substitution in the unquoted string
-- Variables with slashes need proper quoting in shell commands
+- Initial fix used double quotes which GitLab YAML parser had trouble with
+- The docker tag and push commands had improperly escaped variables
 
 **Solution:**
-Quoted the docker tag and push commands to properly handle variable substitution:
+Removed quotes and used simple variable syntax without braces for cleaner YAML parsing:
 ```yaml
-# BEFORE
-- docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
-- docker push ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
-
-# AFTER
+# BEFORE (problematic)
 - docker tag nginx:alpine "${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
 - docker push "${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
+
+# AFTER (fixed)
+- docker tag nginx:alpine $CI_REGISTRY_IMAGE/e4l-backend:dummy
+- docker push $CI_REGISTRY_IMAGE/e4l-backend:dummy
 ```
+
+The shell will properly expand `$CI_REGISTRY_IMAGE` without additional quoting needed.
 
 Also applied the same fix to `dummy_frontend_image` job for consistency.
 
 **Why:**
-- Variables in shell commands should be quoted to handle special characters (like /)
-- Proper quoting ensures YAML parser correctly interprets the script lines as strings
+- GitLab CI variables don't need to be in braces when used in simple command arguments
+- Using `$VAR` instead of `${VAR}` with quotes produces cleaner YAML that the parser handles better
+- The shell will still correctly substitute the variable value
 
 ---
 
@@ -142,15 +144,15 @@ Also applied the same fix to `dummy_frontend_image` job for consistency.
 **Issue:** Same as dummy_backend_image (preventive fix)
 
 **Solution:**
-Applied same quoting fix to docker tag and push commands:
+Applied same variable syntax fix to docker tag and push commands:
 ```yaml
-# BEFORE
-- docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
-- docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
-
-# AFTER
+# BEFORE (problematic)
 - docker tag nginx:alpine "${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
 - docker push "${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
+
+# AFTER (fixed)
+- docker tag nginx:alpine $CI_REGISTRY_IMAGE/e4l-frontend:dummy
+- docker push $CI_REGISTRY_IMAGE/e4l-frontend:dummy
 ```
 
 ---
