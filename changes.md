@@ -102,6 +102,59 @@ needs:
 
 ---
 
+## Change 3: Fix dummy_backend_image script syntax error
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** GitLab CI error - "jobs:dummy_backend_image:script config should be a string or a nested array of strings up to 10 levels deep"
+
+**Problem:**
+- The docker tag and push commands had unquoted variables in the image name
+- YAML parser couldn't properly interpret the variable substitution in the unquoted string
+- Variables with slashes need proper quoting in shell commands
+
+**Solution:**
+Quoted the docker tag and push commands to properly handle variable substitution:
+```yaml
+# BEFORE
+- docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
+- docker push ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
+
+# AFTER
+- docker tag nginx:alpine "${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
+- docker push "${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
+```
+
+Also applied the same fix to `dummy_frontend_image` job for consistency.
+
+**Why:**
+- Variables in shell commands should be quoted to handle special characters (like /)
+- Proper quoting ensures YAML parser correctly interprets the script lines as strings
+
+---
+
+## Change 4: Fix dummy_frontend_image script syntax error
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Same as dummy_backend_image (preventive fix)
+
+**Solution:**
+Applied same quoting fix to docker tag and push commands:
+```yaml
+# BEFORE
+- docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
+- docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
+
+# AFTER
+- docker tag nginx:alpine "${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
+- docker push "${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
+```
+
+---
+
 **Last Updated:** December 29, 2025
-**Changes Tracked:** 2
+**Changes Tracked:** 4
 **Outstanding Issues:** None
