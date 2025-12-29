@@ -29,7 +29,7 @@ frontend_unit_test:
 
 # Build frontend Docker image
 frontend_image:
-  stage: build
+  stage: image
   image: docker:24-cli
   services:
     - docker:24-dind

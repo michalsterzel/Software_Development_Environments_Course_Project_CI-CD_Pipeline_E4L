@@ -158,58 +158,115 @@ script:
 
 ---
 
-**Last Updated:** December 29, 2025
-**Changes Tracked:** 7
-**Outstanding Issues:** None
-
----
-
-## Change 5: Fix deploy_staging_dummy script to multiline format
+## Change 3: Fix dummy_backend_image and dummy_frontend_image script syntax (FINAL SOLUTION)
 
 **File:** `.gitlab-ci.yml`
 **Date:** December 29, 2025
 **Status:** ✅ Complete
-**Issue:** GitLab CI error - "jobs:deploy_staging_dummy:script config should be a string or a nested array of strings up to 10 levels deep"
+**Issue:** GitLab CI error - "jobs:dummy_backend_image:script config should be a string or a nested array of strings up to 10 levels deep"
 
-**Solution:**
-Applied multiline script format with pipe operator for all deployment and test jobs:
+**Problem:**
+- YAML parser was rejecting the script block format
+- Multiple attempts with different variable syntax and quoting didn't work
+- Issue was with how the script array was being parsed
+
+**Final Solution:**
+Used multiline script format with pipe `|` operator:
 ```yaml
 script:
   - |
-    echo "=== Dummy Staging Deployment ==="
-    export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
-    # ... rest of commands
+    echo "Building dummy backend image..."
+    docker pull nginx:alpine
+    docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
+    docker push ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
+    echo "Dummy backend image pushed: ${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
+```
+
+**Why This Works:**
+- The pipe `|` operator tells YAML to treat the following indented block as a single multiline string
+- GitLab CI then passes this entire string to the shell as one script block
+- This is the standard pattern in GitLab CI for jobs with multiple shell commands
+- Avoids YAML parsing issues with arrays of script commands
+
+**Applied to:**
+- dummy_backend_image
+- dummy_frontend_image
+- deploy_staging_dummy
+- integration_test_dummy
+- deploy_prod_dummy
+
+---
+
+## Change 4: Fix all dummy job scripts to use multiline format
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Same script parsing errors in deploy_staging_dummy, integration_test_dummy, and deploy_prod_dummy
+
+**Solution:**
+Applied the same multiline script format (`- |`) to all remaining dummy CI jobs to ensure consistent, reliable YAML parsing.
+
+---
+
+## Change 5: Fix backend_image stage definition
+
+**File:** `.ci/backend.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** GitLab CI error - "backend_image job: need backend_unit_test is not defined in current or prior stages"
+
+**Problem:**
+- The `backend_image` job was incorrectly set to `stage: build`
+- It had `needs: - backend_unit_test` which is in the `unit_test` stage
+- A job cannot depend on jobs from later stages
+- The `image` stage comes after `unit_test` in the pipeline
+
+**Solution:**
+Changed the stage from `build` to `image`:
+```yaml
+# BEFORE
+backend_image:
+  stage: build  # Wrong - can't depend on unit_test stage
+
+# AFTER
+backend_image:
+  stage: image  # Correct - image stage comes after unit_test
+```
+
+**Why:**
+- Pipeline stages execute in order: build → unit_test → image → deploy_staging → integration_test → deploy_prod
+- The `backend_image` job builds Docker images, so it belongs in the `image` stage
+- Jobs can only use `needs` to depend on jobs from current or prior stages
+- Moving to `image` stage allows it to properly depend on `backend_unit_test`
+
+---
+
+## Change 6: Fix frontend_image stage definition
+
+**File:** `.ci/frontend.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Same issue as backend_image (preventive fix)
+
+**Problem:**
+- The `frontend_image` job was also incorrectly set to `stage: build`
+- Would fail with same error once backend_image was fixed
+
+**Solution:**
+Changed the stage from `build` to `image`:
+```yaml
+# BEFORE
+frontend_image:
+  stage: build  # Wrong
+
+# AFTER
+frontend_image:
+  stage: image  # Correct
 ```
 
 ---
 
-## Change 6: Fix integration_test_dummy script to multiline format
-
-**File:** `.gitlab-ci.yml`
-**Date:** December 29, 2025
-**Status:** ✅ Complete
-**Issue:** Same YAML parsing issue
-
-**Solution:**
-Applied multiline script format to integration test job.
-
----
-
-## Change 7: Fix deploy_prod_dummy script to multiline format
-
-**File:** `.gitlab-ci.yml`
-**Date:** December 29, 2025
-**Status:** ✅ Complete
-**Issue:** Same YAML parsing issue
-
-**Solution:**
-Applied multiline script format to production deployment job.
-
-**Summary:**
-All dummy CI test jobs now use the multiline script format (`- |`) which ensures proper YAML parsing for complex shell scripts with multiple commands and variable substitution.
-
----
-
 **Last Updated:** December 29, 2025
-**Changes Tracked:** 7
+**Changes Tracked:** 6
 **Outstanding Issues:** None
