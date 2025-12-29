@@ -58,6 +58,8 @@ variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
+  CI_REGISTRY: "192.168.56.10:5050"
+  CI_REGISTRY_IMAGE: "192.168.56.10:5050/root/e4l"
 
 default:
   retry:
@@ -126,6 +128,9 @@ dummy_backend_image:
   image: docker:24-cli
   services:
     - docker:24-dind
+  before_script:
+    - echo "Logging into registry ${CI_REGISTRY}"
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - |
       echo "Building dummy backend image..."
@@ -139,6 +144,9 @@ dummy_frontend_image:
   image: docker:24-cli
   services:
     - docker:24-dind
+  before_script:
+    - echo "Logging into registry ${CI_REGISTRY}"
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - |
       echo "Building dummy frontend image..."

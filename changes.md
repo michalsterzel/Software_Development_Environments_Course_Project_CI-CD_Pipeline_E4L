@@ -412,3 +412,35 @@ variables:
 **Last Updated:** December 29, 2025
 **Changes Tracked:** 10
 **Outstanding Issues:** None
+
+---
+
+## Change 11: Point registry to VM IP and add docker login for dummy pushes
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Dummy image pushes failed with `connect: connection refused` to `localhost:5050`
+
+**Problem:**
+- Runner inside the VM tried to push to `localhost:5050`, but registry is reachable at VM IP `192.168.56.10:5050`
+- Also needed authentication for the registry before pushing
+
+**Solution:**
+- Set registry variables to VM IP:
+  ```yaml
+  variables:
+    CI_REGISTRY: "192.168.56.10:5050"
+    CI_REGISTRY_IMAGE: "192.168.56.10:5050/root/e4l"
+  ```
+- Added docker login to dummy image jobs:
+  ```yaml
+  before_script:
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+  ```
+
+**Why:**
+- Ensures the runner talks to the registry at the correct host/port
+- Authenticates pushes using the built-in CI_JOB_TOKEN and gitlab-ci-token
+
+**Impact:** Dummy backend/frontend image jobs should now be able to tag and push successfully.
