@@ -380,6 +380,33 @@ When backend.yml and frontend.yml are ready:
 
 ---
 
+## Change 10: Enable Docker-in-Docker connectivity for dummy jobs
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Dummy image jobs failed with `Cannot connect to the Docker daemon at tcp://docker:2375`
+
+**Problem:**
+- `docker:24-cli` uses the DinD service at `docker:2375`
+- Required environment variables were not set globally, so the CLI could not reach the daemon
+
+**Solution:** Added global variables under `default`:
+```yaml
+default:
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+```
+
+**Why:**
+- `DOCKER_HOST` tells the CLI to talk to the DinD service
+- `DOCKER_TLS_CERTDIR: ""` disables TLS (matches the DinD image default)
+- `DOCKER_DRIVER: overlay2` sets a stable storage driver
+
+---
+
 **Last Updated:** December 29, 2025
-**Changes Tracked:** 9
+**Changes Tracked:** 10
 **Outstanding Issues:** None
