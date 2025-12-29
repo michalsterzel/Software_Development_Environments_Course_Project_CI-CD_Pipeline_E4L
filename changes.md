@@ -102,7 +102,7 @@ needs:
 
 ---
 
-## Change 3: Fix dummy_backend_image script syntax error (2nd attempt)
+## Change 3: Fix dummy_backend_image script syntax error (3rd attempt - multiline)
 
 **File:** `.gitlab-ci.yml`
 **Date:** December 29, 2025
@@ -110,28 +110,34 @@ needs:
 **Issue:** GitLab CI error - "jobs:dummy_backend_image:script config should be a string or a nested array of strings up to 10 levels deep"
 
 **Problem:**
-- YAML parser was having issues with variable expansion in the script
-- First attempted fix with unbraced variables didn't work
+- YAML parser was rejecting the script format
+- Multiple attempts with different variable syntax didn't resolve it
+- Issue appears to be with the script block structure itself
 
 **Solution:**
-Switched back to using braced variables `${VAR}` which is the standard GitLab CI syntax:
+Used multiline script format with pipe `|` operator:
 ```yaml
-docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
-docker push ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
+script:
+  - |
+    echo "Building dummy backend image..."
+    docker pull nginx:alpine
+    docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
+    docker push ${CI_REGISTRY_IMAGE}/e4l-backend:dummy
+    echo "Dummy backend image pushed: ${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
 ```
 
-The braced variable syntax is the correct GitLab CI convention and should properly expand in all contexts.
+The pipe operator tells YAML to treat the following indented block as a single multiline string, which GitLab then passes to the shell.
 
-Also applied the same fix to `dummy_frontend_image` job for consistency.
+Also applied the same fix to `dummy_frontend_image` job.
 
 **Why:**
-- `${CI_REGISTRY_IMAGE}` is the correct GitLab CI variable expansion syntax
-- GitLab's YAML parser expects this format for proper variable substitution
-- This is the standard across all GitLab CI documentation
+- Multiline script format is more reliable for complex shell commands
+- The `|` operator ensures proper YAML parsing of the script block
+- This is a common pattern in GitLab CI for jobs with multiple commands
 
 ---
 
-## Change 4: Fix dummy_frontend_image script syntax error (2nd attempt)
+## Change 4: Fix dummy_frontend_image script syntax error (multiline format)
 
 **File:** `.gitlab-ci.yml`
 **Date:** December 29, 2025
@@ -139,10 +145,15 @@ Also applied the same fix to `dummy_frontend_image` job for consistency.
 **Issue:** Same as dummy_backend_image
 
 **Solution:**
-Applied same fix using proper braced variable syntax:
+Applied multiline script format with pipe operator:
 ```yaml
-docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
-docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
+script:
+  - |
+    echo "Building dummy frontend image..."
+    docker pull nginx:alpine
+    docker tag nginx:alpine ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
+    docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy
+    echo "Dummy frontend image pushed: ${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
 ```
 
 ---
