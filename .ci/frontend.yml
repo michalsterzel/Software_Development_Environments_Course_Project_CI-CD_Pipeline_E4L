@@ -41,4 +41,5 @@ frontend_image:
   dependencies:
     - frontend_build
   needs:
+    - frontend_build
     - frontend_unit_test
