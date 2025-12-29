@@ -336,38 +336,64 @@ line: 'external_url "http://192.168.56.10"'
 
 ---
 
-## Change 9: Comment out real deployment jobs during dummy test
+## Change 9: Fix deploy.yml to prevent YAML parsing errors
 
 **File:** `.ci/deploy.yml`
 **Date:** December 29, 2025
 **Status:** ✅ Complete
-**Issue:** GitLab CI error - "deploy_staging job: undefined need: backend_image" after commenting out backend/frontend includes
+**Issue:** GitLab CI error - "jobs needs config should implement the script:, run:, or trigger: keyword"
 
 **Problem:**
-- When backend.yml and frontend.yml are commented out, the `backend_image` and `frontend_image` jobs don't exist
-- But `deploy_staging` job (in deploy.yml) has `needs: - backend_image` and `needs: - frontend_image`
-- Pipeline fails because it can't find those jobs
+- Initially tried to comment out the real deployment jobs within the YAML file
+- This left orphaned YAML syntax that broke the file structure
+- GitLab YAML parser found invalid job definitions with `needs:` but no job body
 
 **Solution:**
-Commented out the real deployment jobs in deploy.yml:
-- `deploy_staging` (depends on backend_image, frontend_image)
-- `test_staging` (depends on deploy_staging)
-- `deploy_prod` (depends on test_staging)
+Replaced the entire file with placeholder documentation instead of commented-out jobs:
+```yaml
+# Placeholder: Real jobs will go here
+# This file intentionally left with minimal content during dummy test phase
+```
 
-These are being replaced by the dummy equivalents for testing:
-- `deploy_staging_dummy` (depends on dummy_backend_image, dummy_frontend_image)
-- `integration_test_dummy` (depends on deploy_staging_dummy)
-- `deploy_prod_dummy` (depends on integration_test_dummy)
+Added clear instructions on how to restore the real jobs once backend/frontend are ready.
 
 **Why:**
-- For dummy test validation, we only want to run dummy jobs
-- Once backend/frontend teams implement code, uncomment these real jobs
-- The dummy jobs test the same infrastructure with placeholder images
+- Comments in YAML files must be complete lines (not partial job definitions)
+- GitLab includes the entire deploy.yml file, so broken YAML anywhere breaks the whole pipeline
+- Better to have an empty placeholder file with documentation than broken YAML
 
-**Removal Instructions:**
-When backend.yml and frontend.yml are uncommented:
-1. Uncomment deploy_staging, test_staging, deploy_prod in deploy.yml
-2. Comment out or remove dummy jobs from .gitlab-ci.yml
+**To Restore Real Deployment Jobs:**
+When ready to use real backend/frontend images:
+
+1. Uncomment in `.gitlab-ci.yml`:
+   ```yaml
+   - local: ".ci/backend.yml"
+   - local: ".ci/frontend.yml"
+   ```
+
+2. Restore deploy.yml with real job definitions:
+   ```yaml
+   deploy_staging:
+     stage: deploy_staging
+     needs:
+       - backend_image
+       - frontend_image
+     # ... rest of job config
+   
+   test_staging:
+     stage: integration_test
+     needs:
+       - deploy_staging
+     # ... rest of job config
+   
+   deploy_prod:
+     stage: deploy_prod
+     needs:
+       - test_staging
+     # ... rest of job config
+   ```
+
+3. Comment out or remove dummy jobs from `.gitlab-ci.yml`
 
 ---
 

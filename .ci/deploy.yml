@@ -1,48 +1,21 @@
 # Deployment CI Jobs
 # Michal - Infrastructure, CI/CD, Orchestration
 
-# Deploy to staging
-# TEMPORARILY COMMENTED OUT FOR DUMMY TEST
-# deploy_staging:
-#   stage: deploy_staging
-#   image: docker:24-cli
-#   services:
-#     - docker:24-dind
-#   script:
-#     - apk add --no-cache bash curl
-#     - chmod +x ci/deploy_staging.sh
-#     - ./ci/deploy_staging.sh
-#   needs:
-#     - backend_image
-#     - frontend_image
-#   environment:
-#     name: staging
+# DUMMY TEST MODE: Real deployment jobs are disabled
+# These will be re-enabled once backend.yml and frontend.yml are uncommented in .gitlab-ci.yml
+#
+# Real jobs that are temporarily disabled:
+# - deploy_staging (depends on backend_image, frontend_image)
+# - test_staging (depends on deploy_staging)
+# - deploy_prod (depends on test_staging)
+#
+# Once backend and frontend teams implement real images:
+# 1. Uncomment .ci/backend.yml and .ci/frontend.yml in .gitlab-ci.yml
+# 2. Uncomment the jobs below in this file
+# 3. Comment out or remove dummy jobs from .gitlab-ci.yml
 
-# Run integration tests on staging
-# TEMPORARILY COMMENTED OUT FOR DUMMY TEST
-# test_staging:
-#   stage: integration_test
-#   image: alpine:latest
-#   script:
-#     - apk add --no-cache bash curl
-#     - chmod +x ci/test_staging.sh
-#     - ./ci/test_staging.sh
-#   needs:
-#     - deploy_staging
+# Placeholder: Real jobs will go here
+# This file intentionally left with minimal content during dummy test phase
 
-# Deploy to production (only if staging passes)
-# TEMPORARILY COMMENTED OUT FOR DUMMY TEST
-# deploy_prod:
-#   stage: deploy_prod
-#   image: docker:24-cli
-#   services:
-#     - docker:24-dind
-#   script:
-#     - apk add --no-cache bash curl
-#     - chmod +x ci/deploy_prod.sh
-#     - ./ci/deploy_prod.sh
-  needs:
-    - test_staging
-  environment:
     name: production
   when: manual  # Require manual approval for production deployment
