@@ -159,5 +159,57 @@ script:
 ---
 
 **Last Updated:** December 29, 2025
-**Changes Tracked:** 4
+**Changes Tracked:** 7
+**Outstanding Issues:** None
+
+---
+
+## Change 5: Fix deploy_staging_dummy script to multiline format
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** GitLab CI error - "jobs:deploy_staging_dummy:script config should be a string or a nested array of strings up to 10 levels deep"
+
+**Solution:**
+Applied multiline script format with pipe operator for all deployment and test jobs:
+```yaml
+script:
+  - |
+    echo "=== Dummy Staging Deployment ==="
+    export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
+    # ... rest of commands
+```
+
+---
+
+## Change 6: Fix integration_test_dummy script to multiline format
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Same YAML parsing issue
+
+**Solution:**
+Applied multiline script format to integration test job.
+
+---
+
+## Change 7: Fix deploy_prod_dummy script to multiline format
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Same YAML parsing issue
+
+**Solution:**
+Applied multiline script format to production deployment job.
+
+**Summary:**
+All dummy CI test jobs now use the multiline script format (`- |`) which ensures proper YAML parsing for complex shell scripts with multiple commands and variable substitution.
+
+---
+
+**Last Updated:** December 29, 2025
+**Changes Tracked:** 7
 **Outstanding Issues:** None

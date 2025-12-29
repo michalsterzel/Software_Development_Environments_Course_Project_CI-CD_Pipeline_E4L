@@ -152,18 +152,19 @@ deploy_staging_dummy:
   before_script:
     - apk add --no-cache bash curl
   script:
-    - echo "=== Dummy Staging Deployment ==="
-    - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
-    - export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
-    - echo "Backend image: ${BACKEND_IMAGE}"
-    - echo "Frontend image: ${FRONTEND_IMAGE}"
-    - cd infra/staging
-    - docker compose down || true
-    - docker compose pull
-    - docker compose up -d
-    - echo "Waiting for services to stabilize..."
-    - sleep 10
-    - docker compose ps
+    - |
+      echo "=== Dummy Staging Deployment ==="
+      export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
+      export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
+      echo "Backend image: ${BACKEND_IMAGE}"
+      echo "Frontend image: ${FRONTEND_IMAGE}"
+      cd infra/staging
+      docker compose down || true
+      docker compose pull
+      docker compose up -d
+      echo "Waiting for services to stabilize..."
+      sleep 10
+      docker compose ps
   needs:
     - dummy_backend_image
     - dummy_frontend_image
@@ -180,17 +181,18 @@ integration_test_dummy:
   before_script:
     - apk add --no-cache curl bash
   script:
-    - echo "=== Dummy Integration Tests ==="
-    - echo "Waiting for services to respond..."
-    - sleep 5
-    - echo ""
-    - echo "[TEST 1/2] Testing backend HTTP endpoint..."
-    - curl -v http://localhost:8081/ || echo "Note: Backend may need /health endpoint"
-    - echo ""
-    - echo "[TEST 2/2] Testing frontend HTTP endpoint..."
-    - curl -v http://localhost:3001/
-    - echo ""
-    - echo "=== Dummy Integration Tests Complete ==="
+    - |
+      echo "=== Dummy Integration Tests ==="
+      echo "Waiting for services to respond..."
+      sleep 5
+      echo ""
+      echo "[TEST 1/2] Testing backend HTTP endpoint..."
+      curl -v http://localhost:8081/ || echo "Note: Backend may need /health endpoint"
+      echo ""
+      echo "[TEST 2/2] Testing frontend HTTP endpoint..."
+      curl -v http://localhost:3001/
+      echo ""
+      echo "=== Dummy Integration Tests Complete ==="
   needs:
     - deploy_staging_dummy
 
@@ -206,24 +208,25 @@ deploy_prod_dummy:
   before_script:
     - apk add --no-cache bash curl
   script:
-    - echo "=== Dummy Production Deployment ==="
-    - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
-    - export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
-    - echo "Backend image: ${BACKEND_IMAGE}"
-    - echo "Frontend image: ${FRONTEND_IMAGE}"
-    - echo ""
-    - echo "WARNING: Deploying dummy images to production"
-    - cd infra/prod
-    - docker compose down || true
-    - docker compose pull
-    - docker compose up -d
-    - echo "Waiting for services to stabilize..."
-    - sleep 10
-    - docker compose ps
-    - echo ""
-    - echo "Validating production deployment..."
-    - curl -v http://localhost:8082/ || echo "Production validation check"
-    - curl -v http://localhost:3002/
+    - |
+      echo "=== Dummy Production Deployment ==="
+      export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:dummy"
+      export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-frontend:dummy"
+      echo "Backend image: ${BACKEND_IMAGE}"
+      echo "Frontend image: ${FRONTEND_IMAGE}"
+      echo ""
+      echo "WARNING: Deploying dummy images to production"
+      cd infra/prod
+      docker compose down || true
+      docker compose pull
+      docker compose up -d
+      echo "Waiting for services to stabilize..."
+      sleep 10
+      docker compose ps
+      echo ""
+      echo "Validating production deployment..."
+      curl -v http://localhost:8082/ || echo "Production validation check"
+      curl -v http://localhost:3002/
   needs:
     - integration_test_dummy
   when: manual
