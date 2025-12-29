@@ -231,8 +231,8 @@ deploy_prod_dummy:
       docker compose ps
       echo ""
       echo "Validating production deployment..."
-      curl -v http://localhost:8082/ || echo "Production validation check"
-      curl -v http://localhost:3002/
+      docker compose exec -T backend curl -f http://localhost:8080/ || echo "Production validation check"
+      docker compose exec -T frontend curl -f http://localhost:80/
   needs:
     - deploy_staging_dummy
   when: manual

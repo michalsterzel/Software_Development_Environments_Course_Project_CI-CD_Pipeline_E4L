@@ -468,6 +468,7 @@ variables:
 - Tests access services via localhost:8080 (backend) and localhost:80 (frontend) from within containers
 - Removed standalone integration_test_dummy job
 - Updated deploy_prod_dummy to depend on deploy_staging_dummy instead
+ - Production validation also uses `docker compose exec -T` for backend/frontends
 
 **Why:**
 - `docker compose exec` runs commands inside the compose network where services can access themselves
