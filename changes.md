@@ -415,32 +415,35 @@ variables:
 
 ---
 
-## Change 11: Point registry to VM IP and add docker login for dummy pushes
+## Change 11: Point registry to VM IP and configure insecure registry for docker
 
 **File:** `.gitlab-ci.yml`
 **Date:** December 29, 2025
 **Status:** ✅ Complete
-**Issue:** Dummy image pushes failed with `connect: connection refused` to `localhost:5050`
+**Issue:** Dummy image pushes failed with `http: server gave HTTP response to HTTPS client`
 
 **Problem:**
-- Runner inside the VM tried to push to `localhost:5050`, but registry is reachable at VM IP `192.168.56.10:5050`
-- Also needed authentication for the registry before pushing
+- Docker daemon defaults to HTTPS for all registries
+- Our GitLab Container Registry is HTTP-only (not TLS-enabled)
+- Docker login doesn't accept `http://` prefix in registry URL
 
 **Solution (updated):**
-- Set registry variables to VM IP **with http scheme** (registry is not using TLS):
+- Removed `http://` from registry URLs (docker login requires just host:port):
   ```yaml
   variables:
-    CI_REGISTRY: "http://192.168.56.10:5050"
-    CI_REGISTRY_IMAGE: "http://192.168.56.10:5050/root/e4l"
+    CI_REGISTRY: "192.168.56.10:5050"
+    CI_REGISTRY_IMAGE: "192.168.56.10:5050/root/e4l"
   ```
-- Added docker login to dummy image jobs:
+- Configured docker:24-dind service to allow insecure registry:
   ```yaml
-  before_script:
-    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
   ```
 
 **Why:**
-- Ensures the runner talks to the registry at the correct host/port **and protocol**
-- Authenticates pushes using the built-in CI_JOB_TOKEN and gitlab-ci-token
+- `--insecure-registry` tells Docker daemon to allow HTTP (non-TLS) connections to that specific registry
+- Without http:// prefix, docker login can work with the insecure registry flag
+- Applied to both dummy_backend_image and dummy_frontend_image jobs
 
-**Impact:** Dummy backend/frontend image jobs should now be able to tag and push successfully without HTTPS errors.
+**Impact:** Docker can now login, tag, and push to the HTTP registry without HTTPS errors.
