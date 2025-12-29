@@ -147,6 +147,8 @@ deploy_staging_dummy:
   image: docker:24-cli
   services:
     - docker:24-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
   before_script:
     - apk add --no-cache bash curl
   script:
