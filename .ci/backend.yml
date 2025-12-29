@@ -38,4 +38,5 @@ backend_image:
   dependencies:
     - backend_build
   needs:
+    - backend_build
     - backend_unit_test
