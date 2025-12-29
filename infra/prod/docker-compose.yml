@@ -29,7 +29,11 @@ services:
   backend:
     # Image is set via CI_REGISTRY_IMAGE environment variable
     # Same image that passed staging tests
-    image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/backend:latest}
+    # Original production image (commented for dummy test validation):
+    # image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/backend:latest}
+    # BEGIN DUMMY CI TEST
+    image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-backend:dummy}
+    # END DUMMY CI TEST
     ports:
       - "8082:8080"
     environment:
@@ -48,7 +52,11 @@ services:
 
   frontend:
     # Same image that passed staging tests
-    image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/frontend:latest}
+    # Original production image (commented for dummy test validation):
+    # image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/frontend:latest}
+    # BEGIN DUMMY CI TEST
+    image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-frontend:dummy}
+    # END DUMMY CI TEST
     ports:
       - "3002:80"
     environment:

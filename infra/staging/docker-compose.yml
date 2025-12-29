@@ -27,7 +27,11 @@ services:
   backend:
     # Image is set via CI_REGISTRY_IMAGE environment variable
     # Format: registry.example.com/namespace/project/backend:commit-sha
-    image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/backend:latest}
+    # Original production image (commented for dummy test validation):
+    # image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/backend:latest}
+    # BEGIN DUMMY CI TEST
+    image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-backend:dummy}
+    # END DUMMY CI TEST
     ports:
       - "8081:8080"
     environment:
@@ -46,7 +50,11 @@ services:
 
   frontend:
     # Image is set via CI_REGISTRY_IMAGE environment variable
-    image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/frontend:latest}
+    # Original production image (commented for dummy test validation):
+    # image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/frontend:latest}
+    # BEGIN DUMMY CI TEST
+    image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-frontend:dummy}
+    # END DUMMY CI TEST
     ports:
       - "3001:80"
     environment:
