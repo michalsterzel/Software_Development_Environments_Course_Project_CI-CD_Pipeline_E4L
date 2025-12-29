@@ -183,36 +183,23 @@ deploy_staging_dummy:
       echo "Waiting for services to stabilize..."
       sleep 10
       docker compose ps
+      echo ""
+      echo "=== Running Integration Tests ==="
+      echo "Waiting for services to respond..."
+      sleep 5
+      echo ""
+      echo "[TEST 1/2] Testing backend HTTP endpoint..."
+      curl -v http://backend:8080/ || echo "Note: Backend may need /health endpoint"
+      echo ""
+      echo "[TEST 2/2] Testing frontend HTTP endpoint..."
+      curl -v http://frontend:3000/
+      echo ""
+      echo "=== Integration Tests Complete ==="
   needs:
     - dummy_backend_image
     - dummy_frontend_image
   environment:
     name: staging_dummy
-
-# ============================================================
-# Dummy Integration Tests
-# ============================================================
-
-integration_test_dummy:
-  stage: integration_test
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache curl bash
-  script:
-    - |
-      echo "=== Dummy Integration Tests ==="
-      echo "Waiting for services to respond..."
-      sleep 5
-      echo ""
-      echo "[TEST 1/2] Testing backend HTTP endpoint..."
-      curl -v http://localhost:8081/ || echo "Note: Backend may need /health endpoint"
-      echo ""
-      echo "[TEST 2/2] Testing frontend HTTP endpoint..."
-      curl -v http://localhost:3001/
-      echo ""
-      echo "=== Dummy Integration Tests Complete ==="
-  needs:
-    - deploy_staging_dummy
 
 # ============================================================
 # Dummy Production Deployment
@@ -247,7 +234,7 @@ deploy_prod_dummy:
       curl -v http://localhost:8082/ || echo "Production validation check"
       curl -v http://localhost:3002/
   needs:
-    - integration_test_dummy
+    - deploy_staging_dummy
   when: manual
   environment:
     name: prod_dummy

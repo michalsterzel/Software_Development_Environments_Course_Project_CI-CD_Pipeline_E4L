@@ -449,3 +449,28 @@ variables:
 **Impact:** Docker can now login, tag, and push to the HTTP registry without HTTPS errors.
 
 **Extension:** Also applied to deploy_staging_dummy and deploy_prod_dummy jobs, as `docker compose pull` encounters the same HTTPS issue when pulling images from the insecure registry.
+
+## Change 12: Merge integration tests into deployment job
+
+**File:** `.gitlab-ci.yml`
+**Date:** December 29, 2025
+**Status:** ✅ Complete
+**Issue:** Integration test job failed with "Connection refused" to localhost:8081 and localhost:3001
+
+**Problem:**
+- integration_test_dummy ran in a separate alpine container with no network access to deployed services
+- Services were running in deploy_staging_dummy job's Docker-in-Docker environment
+- Isolated jobs cannot communicate with each other's containers
+
+**Solution:**
+- Merged integration tests into deploy_staging_dummy script (runs after `docker compose up -d`)
+- Changed test URLs to use Docker service names: `http://backend:8080/` and `http://frontend:3000/`
+- Removed standalone integration_test_dummy job
+- Updated deploy_prod_dummy to depend on deploy_staging_dummy instead
+
+**Why:**
+- Tests can now access services via Docker Compose network
+- Service names (backend, frontend) resolve within the same docker compose context
+- Simpler pipeline structure for dummy test
+
+**Impact:** Integration tests can now reach the deployed services and validate they're running.
