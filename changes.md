@@ -390,19 +390,21 @@ When backend.yml and frontend.yml are ready:
 **Problem:**
 - `docker:24-cli` uses the DinD service at `docker:2375`
 - Required environment variables were not set globally, so the CLI could not reach the daemon
+- Initial attempt placed variables under `default`, which GitLab does not support (caused "default config contains unknown keys: variables")
 
-**Solution:** Added global variables under `default`:
+**Solution:**
+- Move DinD variables to top-level `variables` block:
 ```yaml
-default:
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
 ```
 
 **Why:**
-- `DOCKER_HOST` tells the CLI to talk to the DinD service
-- `DOCKER_TLS_CERTDIR: ""` disables TLS (matches the DinD image default)
+- `variables` must be top-level or job-level; `default` cannot contain `variables`
+- `DOCKER_HOST` points CLI to the DinD service
+- `DOCKER_TLS_CERTDIR: ""` disables TLS to match the DinD image default
 - `DOCKER_DRIVER: overlay2` sets a stable storage driver
 
 ---
