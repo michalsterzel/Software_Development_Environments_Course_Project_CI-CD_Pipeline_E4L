@@ -464,13 +464,15 @@ variables:
 
 **Solution:**
 - Merged integration tests into deploy_staging_dummy script (runs after `docker compose up -d`)
-- Changed test URLs to use Docker service names: `http://backend:8080/` and `http://frontend:3000/`
+- Changed test commands to use `docker compose exec -T` to run curl inside the service containers
+- Tests access services via localhost:8080 (backend) and localhost:80 (frontend) from within containers
 - Removed standalone integration_test_dummy job
 - Updated deploy_prod_dummy to depend on deploy_staging_dummy instead
 
 **Why:**
-- Tests can now access services via Docker Compose network
-- Service names (backend, frontend) resolve within the same docker compose context
+- `docker compose exec` runs commands inside the compose network where services can access themselves
+- The `-T` flag disables pseudo-TTY allocation (required for CI/CD non-interactive execution)
+- Services listen on their internal ports (8080 for backend, 80 for frontend)
 - Simpler pipeline structure for dummy test
 
 **Impact:** Integration tests can now reach the deployed services and validate they're running.

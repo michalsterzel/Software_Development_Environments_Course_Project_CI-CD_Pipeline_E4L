@@ -189,10 +189,10 @@ deploy_staging_dummy:
       sleep 5
       echo ""
       echo "[TEST 1/2] Testing backend HTTP endpoint..."
-      curl -v http://backend:8080/ || echo "Note: Backend may need /health endpoint"
+      docker compose exec -T backend curl -f http://localhost:8080/ || echo "Note: Backend may need /health endpoint"
       echo ""
       echo "[TEST 2/2] Testing frontend HTTP endpoint..."
-      curl -v http://frontend:3000/
+      docker compose exec -T frontend curl -f http://localhost:80/
       echo ""
       echo "=== Integration Tests Complete ==="
   needs:
