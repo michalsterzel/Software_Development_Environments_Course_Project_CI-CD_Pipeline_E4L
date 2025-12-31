@@ -1,5 +1,4 @@
 version: "3.5"
-
 services:
   e4l-db:
     restart: always
@@ -7,9 +6,11 @@ services:
     container_name: e4l-db
     volumes:
       - /opt/e4l-mysql:/var/lib/mysql
+      # This points to your local init folder to create e4l_staging and e4l_prod
+      - ./init:/docker-entrypoint-initdb.d
       - ${DUMP_DIR}:${DUMP_DIR}
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_USER=${MYSQL_USERNAME}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - MYSQL_ROOT_HOST=%
@@ -19,5 +20,5 @@ services:
 
 networks:
   e4l-db-net:
-    external: false
+    external: true
     name: e4l-db-net

@@ -10,7 +10,7 @@ public class VariableValueTest {
         VariableValue variableValue = new VariableValue();
         variableValue.setValue(10.5);
         
-        assertEquals("Variable value should be 10.5", 1.5, variableValue.getValue(), 0.001);
+        assertEquals("Variable value should be 10.5", 10.5, variableValue.getValue(), 0.001);
     }
 
     @Test
