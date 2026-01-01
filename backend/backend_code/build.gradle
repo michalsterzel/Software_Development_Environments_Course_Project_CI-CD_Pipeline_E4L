@@ -51,12 +51,24 @@ dependencies {
     implementation 'org.projectlombok:lombok:1.18.26'
     annotationProcessor 'org.projectlombok:lombok:1.18.26'
 
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'com.h2database:h2:2.2.220'
-    testRuntimeOnly 'com.h2database:h2:2.2.220'
-    testImplementation group: 'junit', name: 'junit', version: '4.13.1'
+    testImplementation 'com.h2database:h2:1.4.200'
+    testImplementation 'junit:junit:4.13.1'
+    
+    // !!! ADD THIS LINE !!! 
+    // This allows the JUnit 5 platform to "see" and run your 17 old JUnit 4 tests.
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+
+    testImplementation 'org.testcontainers:testcontainers:1.17.6'
+    testImplementation 'org.testcontainers:mysql:1.17.6'
+    testImplementation 'org.testcontainers:junit-jupiter:1.17.6'
 }
 
 tasks.withType(JavaCompile) {
     options.compilerArgs += ["-Xlint:deprecation", "-Xlint:-options"]
+}
+
+test {
+    useJUnitPlatform()
 }

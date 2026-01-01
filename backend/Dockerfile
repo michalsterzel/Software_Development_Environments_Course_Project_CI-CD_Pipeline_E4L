@@ -1,25 +1,23 @@
-# Backend Dockerfile
-# Multi-stage build for backend application
-
-# Build stage
-FROM openjdk:17-slim AS build
+# --- Stage 1: Build the Application ---
+FROM gradle:8.3-jdk17 AS builder
 WORKDIR /app
 
-# Copy source files
-COPY . .
+# Copy only configuration first to cache dependencies
+COPY build.gradle settings.gradle gradle.properties ./
+COPY src ./src
 
-# Build application (adjust command based on your build tool)
-# RUN ./gradlew build --no-daemon
+# Build the JAR (skipping tests to speed up build, tests run in CI stage)
+RUN gradle bootJar -x test --no-daemon
 
-# Runtime stage
+# --- Stage 2: Run the Application ---
 FROM openjdk:17-slim
 WORKDIR /app
 
-# Copy built artifact from build stage
-# COPY --from=build /app/build/libs/*.jar app.jar
+# Copy the built JAR from the builder stage
+COPY --from=builder /app/build/libs/e4l-server.jar app.jar
 
-# Expose backend container port
-EXPOSE <BE_CONTAINER_PORT>
+# Expose the port (Requirement: "Exposes backend container port")
+EXPOSE 8080
 
-# Run application
-# CMD ["java", "-jar", "app.jar"]
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

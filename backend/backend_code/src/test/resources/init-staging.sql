@@ -1,0 +1,9 @@
+-- Test database initialization
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT
+);
+
+CREATE TABLE IF NOT EXISTS questionnaire (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT
+);
+

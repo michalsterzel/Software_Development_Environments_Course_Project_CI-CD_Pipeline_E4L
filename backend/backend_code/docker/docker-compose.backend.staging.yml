@@ -1,5 +1,4 @@
 version: "3.5"
-
 services:
   e4l-backend-staging:
     restart: always
@@ -8,13 +7,22 @@ services:
     ports:
       - "8084:8080"
     environment:
-      - SPRING_DATASOURCE_URL=${STAGING_SPRING_DATASOURCE_URL}
-      - SPRING_DATASOURCE_USERNAME=${MYSQL_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - RESOURCES_STATIC_URL=${STAGING_RESOURCES_STATIC_URL}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://e4l-db:3306/e4l_staging?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - JWT_SECRET=my-staging-secret-key-2025
       - TZ=Europe/Luxembourg
+      # THESE ARE THE MISSING PIECES CAUSING THE CRASH:
+      - ADMIN_EMAIL=admin@e4l.lu
+      - ADMIN_PASSWORD=admin123
+      - DEV_RESOURCES_STATIC_URL=http://localhost:8084/e4lapi/
+      - RESOURCES_STATIC_URL=http://localhost:8084/e4lapi/
+      - SIGNATURE_KEY=my-test-signature-key-2025
     networks:
       - e4l-db-net
+    depends_on:
+      - e4l-db
+    entrypoint: ["/bin/sh", "-c", "sleep 20 && java -jar /app/app.jar"]
 
 networks:
   e4l-db-net:

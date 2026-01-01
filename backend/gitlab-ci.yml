@@ -1,0 +1,99 @@
+# ============================================================
+# Root GitLab CI/CD Pipeline Configuration - BACKEND UPDATED 
+# ============================================================
+
+stages:
+  - build
+  - unit_test      
+  - image          
+  - deploy_staging 
+  - integration_test 
+  - deploy_prod    
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+  CI_REGISTRY: "192.168.56.10:5050"
+  CI_REGISTRY_IMAGE: "192.168.56.10:5050/root/e4l"
+  # Shared DB credentials matching your verified .env
+  MYSQL_ROOT_PASSWORD: "12345678"
+  MYSQL_USERNAME: "root"
+
+# ============================================================
+# REAL BACKEND JOBS 
+# ============================================================
+
+# 1. Run Backend Unit Tests (Fails pipeline on error)
+backend_unit_tests:
+  stage: unit_test
+  image: gradle:8.5-jdk17
+  script:
+    - cd backend/backend_code
+    - chmod +x gradlew
+    - ./gradlew clean test
+  artifacts:
+    when: always
+    paths:
+      - backend/backend_code/build/reports/tests/test/
+    reports:
+      junit: backend/backend_code/build/test-results/test/**/TEST-*.xml
+
+# 2. Build Multi-stage Docker Image
+backend_image_build:
+  stage: image
+  image: docker:24-cli
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  before_script:
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+  script:
+    - cd backend/backend_code
+    - docker build -t ${CI_REGISTRY_IMAGE}/e4l-backend:latest .
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-backend:latest
+  needs: ["backend_unit_tests"]
+
+# 3. Deploy Staging (Backend + DB)
+deploy_backend_staging:
+  stage: deploy_staging
+  image: docker:24-cli
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  script:
+    - cd backend/backend_code/docker
+    - echo "Cleaning old volumes and networks..."
+    - docker compose -f docker-compose.db.yml -f docker-compose.backend.staging.yml down -v || true
+    - docker network create e4l-db-net || true
+    - echo "Starting Staging Environment..."
+    - docker compose -f docker-compose.db.yml -f docker-compose.backend.staging.yml up -d
+  environment:
+    name: staging
+
+# 4. Staging Integration Test (Proving Backend <-> DB)
+backend_staging_integration_check:
+  stage: integration_test
+  image: docker:24-cli
+  services:
+    - name: docker:24-dind
+  script:
+    - echo "Waiting for backend to initialize..."
+    - sleep 30
+    - |
+      echo "--- Checking Logical Databases ---"
+      docker exec e4l-db mysql -u root -p${MYSQL_ROOT_PASSWORD} -e "SHOW DATABASES;" | grep -E "e4l_staging|e4l_prod"
+      
+      echo "--- Checking Backend Connectivity ---"
+      if docker logs e4l-backend-staging | grep -q "Started Main"; then
+        echo "✅ SUCCESS: Backend is connected to DB and Healthy."
+      else
+        echo "❌ FAILURE: Backend failed to start or connect."
+        docker logs e4l-backend-staging
+        exit 1
+      fi
+  needs: ["deploy_backend_staging"]
+
+# ============================================================
+# END BACKEND COMPONENT
+# ============================================================
