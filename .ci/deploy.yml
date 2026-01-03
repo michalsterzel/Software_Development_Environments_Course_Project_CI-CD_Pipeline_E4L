@@ -1,20 +1,176 @@
+# ============================================================
 # Deployment CI Jobs
-# Michal - Infrastructure, CI/CD, Orchestration
+# ============================================================
+# Owner: Michal (Infrastructure & CI/CD)
+# Backend Support: Jabin
+# Frontend Support: Maksym
 #
-# DUMMY TEST MODE: This file is not included during dummy test phase.
-# Real deployment jobs are disabled during dummy test to avoid dependencies on backend/frontend.
+# This file defines deployment jobs for staging and production environments.
+# Jobs deploy Docker images built by backend.yml and frontend.yml to environments.
 #
-# These jobs will be restored once backend.yml and frontend.yml are uncommented:
-# - deploy_staging (depends on backend_image, frontend_image)
-# - test_staging (depends on deploy_staging)  
-# - deploy_prod (depends on test_staging)
+# Jobs:
+#   - deploy_backend_staging: Deploy backend to staging environment
+#   - deploy_staging: Deploy full stack (backend + frontend) to staging
+#   - deploy_backend_prod: Deploy backend to production (manual)
+#   - deploy_prod: Deploy full stack to production (manual)
 #
-# During dummy test phase:
-# - The .ci/deploy.yml include is commented out in .gitlab-ci.yml
-# - Only dummy jobs in .gitlab-ci.yml are executed
-# - Dummy jobs test infrastructure with nginx:alpine placeholder images
-#
-# To restore real deployment jobs:
-# 1. Uncomment .ci/backend.yml and .ci/frontend.yml in .gitlab-ci.yml
-# 2. Uncomment .ci/deploy.yml in .gitlab-ci.yml
-# 3. Comment out or remove dummy jobs from .gitlab-ci.yml
+# CURRENT STATUS (January 2026):
+# - Backend deployment: ACTIVE (backend + database)
+# - Frontend deployment: COMMENTED OUT (waiting for Maksym)
+# - Integration tests: NOT IMPLEMENTED YET
+# ============================================================
+
+# ============================================================
+# Backend-Only Staging Deployment
+# ============================================================
+# Deploys backend service and database to staging environment.
+# Frontend deployment is disabled until frontend image is ready.
+
+deploy_backend_staging:
+  stage: deploy_staging
+  image: docker:24-cli
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  before_script:
+    - apk add --no-cache docker-compose bash curl
+  script:
+    - echo "=== Backend Staging Deployment ==="
+    - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
+    - echo "Backend image: ${BACKEND_IMAGE}"
+    - echo "Deploying to staging environment..."
+    - cd infra/staging
+    # Stop existing containers
+    - docker compose down || true
+    # Deploy only backend and database (skip frontend)
+    - docker compose up -d backend db
+    - echo "Waiting for services to stabilize..."
+    - sleep 20
+    - docker compose ps
+    - echo ""
+    - echo "=== Deployment Complete ==="
+    - echo "Backend available at: http://192.168.56.10:8081"
+    - echo "Database available at: 192.168.56.10:3307"
+  needs:
+    - backend_image
+  environment:
+    name: staging
+    url: http://192.168.56.10:8081
+
+# ============================================================
+# Full Stack Staging Deployment (Backend + Frontend)
+# ============================================================
+# COMMENTED OUT: Waiting for frontend image from Maksym
+# Uncomment when frontend.yml is active and frontend_image job exists
+
+# deploy_staging:
+#   stage: deploy_staging
+#   image: docker:24-cli
+#   services:
+#     - name: docker:24-dind
+#       command: ["--insecure-registry=192.168.56.10:5050"]
+#   before_script:
+#     - apk add --no-cache docker-compose bash curl
+#   script:
+#     - echo "=== Full Stack Staging Deployment ==="
+#     - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
+#     - export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA}"
+#     - echo "Backend image: ${BACKEND_IMAGE}"
+#     - echo "Frontend image: ${FRONTEND_IMAGE}"
+#     - echo "Deploying to staging environment..."
+#     - cd infra/staging
+#     - docker compose down || true
+#     - docker compose pull
+#     - docker compose up -d
+#     - echo "Waiting for services to stabilize..."
+#     - sleep 20
+#     - docker compose ps
+#     - echo ""
+#     - echo "=== Deployment Complete ==="
+#     - echo "Backend available at: http://192.168.56.10:8081"
+#     - echo "Frontend available at: http://192.168.56.10:3001"
+#     - echo "Database available at: 192.168.56.10:3307"
+#   needs:
+#     - backend_image
+#     - frontend_image
+#   environment:
+#     name: staging
+#     url: http://192.168.56.10:3001
+
+# ============================================================
+# Backend-Only Production Deployment
+# ============================================================
+# Deploys backend service and database to production environment.
+# Requires manual approval before execution.
+
+deploy_backend_prod:
+  stage: deploy_prod
+  image: docker:24-cli
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  before_script:
+    - apk add --no-cache docker-compose bash curl
+  script:
+    - echo "=== Backend Production Deployment ==="
+    - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
+    - echo "Backend image: ${BACKEND_IMAGE}"
+    - echo "Deploying to production environment..."
+    - cd infra/prod
+    # Stop existing containers
+    - docker compose down || true
+    # Deploy only backend and database (skip frontend)
+    - docker compose up -d backend db
+    - echo "Waiting for services to stabilize..."
+    - sleep 20
+    - docker compose ps
+    - echo ""
+    - echo "=== Production Deployment Complete ==="
+    - echo "Backend available at: http://192.168.56.10:8082"
+    - echo "Database available at: 192.168.56.10:3308"
+  needs:
+    - deploy_backend_staging
+  when: manual
+  environment:
+    name: production
+    url: http://192.168.56.10:8082
+
+# ============================================================
+# Full Stack Production Deployment (Backend + Frontend)
+# ============================================================
+# COMMENTED OUT: Waiting for frontend image from Maksym
+# Uncomment when frontend.yml is active and frontend_image job exists
+
+# deploy_prod:
+#   stage: deploy_prod
+#   image: docker:24-cli
+#   services:
+#     - name: docker:24-dind
+#       command: ["--insecure-registry=192.168.56.10:5050"]
+#   before_script:
+#     - apk add --no-cache docker-compose bash curl
+#   script:
+#     - echo "=== Full Stack Production Deployment ==="
+#     - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
+#     - export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA}"
+#     - echo "Backend image: ${BACKEND_IMAGE}"
+#     - echo "Frontend image: ${FRONTEND_IMAGE}"
+#     - echo "Deploying to production environment..."
+#     - cd infra/prod
+#     - docker compose down || true
+#     - docker compose pull
+#     - docker compose up -d
+#     - echo "Waiting for services to stabilize..."
+#     - sleep 20
+#     - docker compose ps
+#     - echo ""
+#     - echo "=== Production Deployment Complete ==="
+#     - echo "Backend available at: http://192.168.56.10:8082"
+#     - echo "Frontend available at: http://192.168.56.10:3002"
+#     - echo "Database available at: 192.168.56.10:3308"
+#   needs:
+#     - deploy_staging
+#   when: manual
+#   environment:
+#     name: production
+#     url: http://192.168.56.10:3002
