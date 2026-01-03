@@ -5,8 +5,8 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Polyfill for async/await support
-require('babel-polyfill');
+// Polyfill for async/await support (regenerator-runtime is already in dependencies)
+require('regenerator-runtime/runtime');
 
 // Transpile test files on-the-fly so ES module syntax works under CommonJS
 require('babel-core/register')({
