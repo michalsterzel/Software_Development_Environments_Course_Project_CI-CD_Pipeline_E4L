@@ -8,7 +8,7 @@ const fs = require('fs');
 // Transpile test files on-the-fly so ES module syntax works under CommonJS
 require('babel-core/register')({
   presets: [
-    ['env', { modules: false }],
+    ['env', { modules: 'commonjs' }],  // Must convert ES modules to CommonJS for Node
     'react',
     'stage-3'
   ],
@@ -16,7 +16,9 @@ require('babel-core/register')({
     'transform-decorators-legacy',
     'transform-class-properties',
     'transform-object-rest-spread'
-  ]
+  ],
+  // Ignore node_modules except our own src
+  ignore: /node_modules\/(?!@)/
 });
 
 // Ignore non-JS assets if imported (defensive)
