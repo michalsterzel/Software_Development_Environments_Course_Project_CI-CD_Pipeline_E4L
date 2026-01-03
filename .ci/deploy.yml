@@ -40,9 +40,7 @@ deploy_backend_staging:
     - echo "Backend image: ${BACKEND_IMAGE}"
     - echo "Deploying to staging environment..."
     - cd infra/staging
-    # Stop existing containers
     - docker compose down || true
-    # Deploy only backend and database (skip frontend)
     - docker compose up -d backend db
     - echo "Waiting for services to stabilize..."
     - sleep 20
@@ -117,9 +115,7 @@ deploy_backend_prod:
     - echo "Backend image: ${BACKEND_IMAGE}"
     - echo "Deploying to production environment..."
     - cd infra/prod
-    # Stop existing containers
     - docker compose down || true
-    # Deploy only backend and database (skip frontend)
     - docker compose up -d backend db
     - echo "Waiting for services to stabilize..."
     - sleep 20
