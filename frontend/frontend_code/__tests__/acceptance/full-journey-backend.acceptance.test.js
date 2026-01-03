@@ -224,7 +224,8 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     const questions = questionnaireState.questionnaire.questions;
     console.log('✓ Questions loaded and stored in state');
     console.log(`  - Total questions: ${questions.length}`);
-    console.log(`  - First question: "${questions[0].text?.substring(0, 50)}..."`);
+    const firstQuestionText = questions[0] && questions[0].text ? questions[0].text.substring(0, 50) : 'N/A';
+    console.log(`  - First question: "${firstQuestionText}..."`);
     console.log('');
     
     // =======================================================================
