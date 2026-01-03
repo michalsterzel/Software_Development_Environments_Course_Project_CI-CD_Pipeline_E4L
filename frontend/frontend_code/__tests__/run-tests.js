@@ -1,13 +1,9 @@
 #!/usr/bin/env node
 // __tests__/run-tests.js
 
-import { execSync } from 'child_process';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const { execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 
 console.log('\n========================================');
 console.log('  E4L Frontend Test Suite');
