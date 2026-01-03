@@ -37,18 +37,17 @@ deploy_backend_staging:
   script:
     - echo "=== Backend Staging Deployment ==="
     - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
-    - echo "Backend image: ${BACKEND_IMAGE}"
-    - echo "Deploying to staging environment..."
+    - echo "Backend image - ${BACKEND_IMAGE}"
+    - echo "Deploying to staging environment"
     - cd infra/staging
     - docker compose down || true
     - docker compose up -d backend db
-    - echo "Waiting for services to stabilize..."
+    - echo "Waiting for services to stabilize"
     - sleep 20
     - docker compose ps
-    - echo ""
     - echo "=== Deployment Complete ==="
-    - echo "Backend available at: http://192.168.56.10:8081"
-    - echo "Database available at: 192.168.56.10:3307"
+    - echo "Backend available at http://192.168.56.10:8081"
+    - echo "Database available at 192.168.56.10:3307"
   needs:
     - backend_image
   environment:
@@ -112,18 +111,17 @@ deploy_backend_prod:
   script:
     - echo "=== Backend Production Deployment ==="
     - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
-    - echo "Backend image: ${BACKEND_IMAGE}"
-    - echo "Deploying to production environment..."
+    - echo "Backend image - ${BACKEND_IMAGE}"
+    - echo "Deploying to production environment"
     - cd infra/prod
     - docker compose down || true
     - docker compose up -d backend db
-    - echo "Waiting for services to stabilize..."
+    - echo "Waiting for services to stabilize"
     - sleep 20
     - docker compose ps
-    - echo ""
     - echo "=== Production Deployment Complete ==="
-    - echo "Backend available at: http://192.168.56.10:8082"
-    - echo "Database available at: 192.168.56.10:3308"
+    - echo "Backend available at http://192.168.56.10:8082"
+    - echo "Database available at 192.168.56.10:3308"
   needs:
     - deploy_backend_staging
   when: manual
