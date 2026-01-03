@@ -32,6 +32,8 @@ module.exports = env => {
                                 "stage-3"
                             ],
                             plugins: [
+                                // Decorators must run before class properties
+                                "transform-decorators-legacy",
                                 "transform-class-properties",
                                 "transform-object-rest-spread"
                             ]
