@@ -5,6 +5,29 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+// Transpile test files on-the-fly so ES module syntax works under CommonJS
+require('babel-core/register')({
+  presets: [
+    ['env', { modules: false }],
+    'react',
+    'stage-3'
+  ],
+  plugins: [
+    'transform-decorators-legacy',
+    'transform-class-properties',
+    'transform-object-rest-spread'
+  ]
+});
+
+// Ignore non-JS assets if imported (defensive)
+require.extensions['.scss'] = () => {};
+require.extensions['.css'] = () => {};
+require.extensions['.svg'] = () => {};
+require.extensions['.png'] = () => {};
+require.extensions['.jpg'] = () => {};
+require.extensions['.jpeg'] = () => {};
+require.extensions['.gif'] = () => {};
+
 console.log('\n========================================');
 console.log('  E4L Frontend Test Suite');
 console.log('  Testing with REAL source imports');
@@ -46,10 +69,8 @@ testFiles.forEach((testFile) => {
   console.log('─'.repeat(50));
   
   try {
-    execSync(`node ${fullPath}`, { 
-      stdio: 'inherit',
-      env: { ...process.env }
-    });
+    // Run test file in-process so Babel register handles ES syntax
+    require(fullPath);
     passedTests++;
     console.log('─'.repeat(50));
     console.log(`✓ ${testFile} - PASSED\n`);
@@ -58,6 +79,9 @@ testFiles.forEach((testFile) => {
     failedTestsList.push(testFile);
     console.log('─'.repeat(50));
     console.log(`✗ ${testFile} - FAILED\n`);
+    if (error && error.stack) {
+      console.error(error.stack);
+    }
   }
 });
 
