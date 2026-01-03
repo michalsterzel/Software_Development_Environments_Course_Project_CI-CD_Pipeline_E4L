@@ -1,4 +1,29 @@
 # Vagrant
 .vagrant/
 
+# Node.js dependencies (deeply nested, can exceed Windows path limits)
+node_modules/
+frontend/frontend_code/node_modules/
+
+# npm lock files (optional - keep if you want reproducible installs)
+# package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
 temp_docs/

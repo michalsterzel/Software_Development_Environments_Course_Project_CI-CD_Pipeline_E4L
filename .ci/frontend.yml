@@ -1,45 +1,67 @@
+# ============================================================
 # Frontend CI Jobs
-# Maksym - Frontend, Dev Environment
+# ============================================================
+# Owner: Maksym (Frontend) / Integration: Michal (Infrastructure)
+#
+# This file defines frontend build, test, and image creation jobs.
+# It is included by the root .gitlab-ci.yml pipeline orchestration.
+#
+# Jobs:
+#   - frontend_build: Compile frontend using Webpack
+#   - frontend_unit_test: Run unit tests
+#   - frontend_image: Build and push Docker image to registry
+#
+# Deployment is handled separately in .ci/deploy.yml
+# ============================================================
 
-# Frontend build and test
+# Build frontend application
 frontend_build:
   stage: build
   image: node:18-alpine
   script:
-    - cd frontend
-    - echo "Installing dependencies..."
-    # - npm ci
-    - echo "Building frontend..."
-    # - npm run build
+    - cd frontend/frontend_code
+    - npm ci
+    - echo "Building frontend with Webpack"
+    - npm run build
   artifacts:
     paths:
-      - frontend/dist/
+      - frontend/frontend_code/e4l.frontend.docker/web/dist/
     expire_in: 1 hour
 
+# Run frontend unit tests
 frontend_unit_test:
   stage: unit_test
   image: node:18-alpine
   script:
-    - cd frontend
-    - echo "Running frontend unit tests..."
-    # - npm ci
-    # - npm run test
+    - cd frontend/frontend_code
+    - npm ci
+    - echo "Running frontend unit tests"
+    - npm test
+  artifacts:
+    when: always
+    paths:
+      - frontend/frontend_code/__tests__/
   dependencies:
     - frontend_build
 
-# Build frontend Docker image
+# Build and push frontend Docker image
 frontend_image:
   stage: image
   image: docker:24-cli
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  before_script:
+    - echo "Logging into registry ${CI_REGISTRY}"
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - cd frontend
-    - echo "Building frontend Docker image..."
-    - docker build -t localhost:5050/frontend:${CI_COMMIT_SHA} .
-    - docker push localhost:5050/frontend:${CI_COMMIT_SHA}
-  dependencies:
-    - frontend_build
+    - echo "Building frontend Docker image"
+    - docker build -t ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA} .
+    - docker tag ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/e4l-frontend:latest
+    - echo "Pushing frontend image with tag ${CI_COMMIT_SHA}"
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA}
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:latest
   needs:
     - frontend_build
     - frontend_unit_test

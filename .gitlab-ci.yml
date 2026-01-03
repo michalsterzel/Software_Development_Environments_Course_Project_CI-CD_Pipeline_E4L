@@ -46,8 +46,8 @@ stages:
 include:
   # Backend CI jobs (Jabin) - Integrated January 2026
   - local: ".ci/backend.yml"
-  # Frontend CI jobs (Maksym) - Uncomment when frontend is ready
-  # - local: ".ci/frontend.yml"
+  # Frontend CI jobs (Maksym) - Integrated January 2026
+  - local: ".ci/frontend.yml"
   # Deployment jobs (Michal) - Backend deployment active, frontend commented out
   - local: ".ci/deploy.yml"
 
