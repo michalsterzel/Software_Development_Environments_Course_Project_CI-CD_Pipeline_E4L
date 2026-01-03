@@ -63,10 +63,19 @@
         dest: /usr/local/bin/docker-compose
         mode: '0755'
 
-    - name: Install MySQL client and libraries
+    # --- OLD: MySQL client (replaced with MariaDB) ---
+    # - name: Install MySQL client and libraries
+    #   apt:
+    #     name:
+    #       - mysql-client
+    #       - python3-pymysql
+    #     state: present
+
+    # --- NEW: MariaDB client for database administration ---
+    - name: Install MariaDB client and libraries
       apt:
         name:
-          - mysql-client
+          - mariadb-client
           - python3-pymysql
         state: present
 

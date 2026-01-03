@@ -14,10 +14,10 @@
 # PORT ASSIGNMENTS:
 # - Backend:  host 8081 → container 8080
 # - Frontend: host 3001 → container 80
-# - MySQL:    host 3307 → container 3306
+# - MariaDB:  host 3307 → container 3306
 #
 # DATABASE:
-# Separate staging database: e4l_staging
+# MariaDB with logical database: e4l_staging
 # Isolated from dev and production databases.
 # ============================================================
 
@@ -25,36 +25,41 @@ version: '3.8'
 
 services:
   backend:
-    # Image is set via CI_REGISTRY_IMAGE environment variable
-    # Format: registry.example.com/namespace/project/backend:commit-sha
-    # Original production image (commented for dummy test validation):
-    # image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/backend:latest}
-    # BEGIN DUMMY CI TEST
-    image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-backend:dummy}
-    # END DUMMY CI TEST
+    # Image is set via BACKEND_IMAGE environment variable from CI
+    # Format: ${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}
+    # --- DUMMY IMAGE (for infrastructure testing) ---
+    # image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-backend:dummy}
+    # --- REAL CI-BUILT IMAGE ---
+    image: ${BACKEND_IMAGE:-192.168.56.10:5050/root/e4l/e4l-backend:latest}
     ports:
       - "8081:8080"
     environment:
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_NAME=e4l_staging
-      - DB_USER=staginguser
-      - DB_PASSWORD=stagingpass
-      # Backend team: Ensure CI/CD variables are configured in GitLab
-      # (JWT_SECRET, SIGNATURE_KEY, ADMIN_EMAIL, etc.)
+      # Spring Boot datasource configuration for MariaDB
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/e4l_staging?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=rootpass_staging
+      # Application-specific environment variables
+      - JWT_SECRET=${JWT_SECRET:-staging-jwt-secret-key-2025}
+      - SIGNATURE_KEY=${SIGNATURE_KEY:-staging-signature-key-2025}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@e4l.lu}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - RESOURCES_STATIC_URL=http://localhost:8081/e4lapi/
+      - DEV_RESOURCES_STATIC_URL=http://localhost:8081/e4lapi/
+      - TZ=Europe/Luxembourg
     depends_on:
       - db
     networks:
       - staging-network
     restart: on-failure
+    # Allow DB to start before backend attempts connection
+    entrypoint: ["/bin/sh", "-c", "sleep 15 && java -jar /app/app.jar"]
 
   frontend:
-    # Image is set via CI_REGISTRY_IMAGE environment variable
-    # Original production image (commented for dummy test validation):
-    # image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/frontend:latest}
-    # BEGIN DUMMY CI TEST
-    image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-frontend:dummy}
-    # END DUMMY CI TEST
+    # Image is set via FRONTEND_IMAGE environment variable from CI
+    # --- DUMMY IMAGE (for infrastructure testing) ---
+    # image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-frontend:dummy}
+    # --- REAL CI-BUILT IMAGE ---
+    image: ${FRONTEND_IMAGE:-192.168.56.10:5050/root/e4l/e4l-frontend:latest}
     ports:
       - "3001:80"
     environment:
@@ -66,19 +71,23 @@ services:
     restart: on-failure
 
   db:
-    image: mysql:8.0
+    # --- OLD: MySQL 8.0 (replaced with MariaDB) ---
+    # image: mysql:8.0
+    # --- NEW: MariaDB 10.11 LTS ---
+    image: mariadb:10.11
+    container_name: staging-db
     ports:
       - "3307:3306"
     environment:
+      - MARIADB_DATABASE=e4l_staging
+      - MARIADB_ROOT_PASSWORD=rootpass_staging
+      # Legacy MySQL env vars for compatibility
       - MYSQL_DATABASE=e4l_staging
-      - MYSQL_USER=staginguser
-      - MYSQL_PASSWORD=stagingpass
       - MYSQL_ROOT_PASSWORD=rootpass_staging
     volumes:
       - staging-db-data:/var/lib/mysql
     networks:
       - staging-network
-    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   staging-db-data:

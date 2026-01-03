@@ -1,42 +1,69 @@
+# ============================================================
 # Backend CI Jobs
-# Jabin - Backend, Database, Staging
+# ============================================================
+# Owner: Jabin (Backend) / Integration: Michal (Infrastructure)
+#
+# This file defines backend build, test, and image creation jobs.
+# It is included by the root .gitlab-ci.yml pipeline orchestration.
+#
+# Jobs:
+#   - backend_build: Compile backend using Gradle
+#   - backend_unit_test: Run unit tests
+#   - backend_image: Build and push Docker image to registry
+#
+# Deployment is handled separately in .ci/deploy.yml
+# ============================================================
 
-# Backend build and test
+# Build backend application
 backend_build:
   stage: build
-  image: openjdk:17-slim
+  image: gradle:8.5-jdk17
   script:
-    - cd backend
+    - cd backend/backend_code
+    - chmod +x gradlew
     - echo "Building backend..."
-    # - ./gradlew build --no-daemon
+    - ./gradlew assemble -x test --no-daemon
   artifacts:
     paths:
-      - backend/build/
+      - backend/backend_code/build/
     expire_in: 1 hour
 
+# Run backend unit tests
 backend_unit_test:
   stage: unit_test
-  image: openjdk:17-slim
+  image: gradle:8.5-jdk17
   script:
-    - cd backend
+    - cd backend/backend_code
+    - chmod +x gradlew
     - echo "Running backend unit tests..."
-    # - ./gradlew test --no-daemon
+    - ./gradlew test --no-daemon
+  artifacts:
+    when: always
+    paths:
+      - backend/backend_code/build/reports/tests/test/
+    reports:
+      junit: backend/backend_code/build/test-results/test/**/TEST-*.xml
   dependencies:
     - backend_build
 
-# Build backend Docker image
+# Build and push backend Docker image
 backend_image:
   stage: image
   image: docker:24-cli
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  before_script:
+    - echo "Logging into registry ${CI_REGISTRY}"
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - cd backend
     - echo "Building backend Docker image..."
-    - docker build -t localhost:5050/backend:${CI_COMMIT_SHA} .
-    - docker push localhost:5050/backend:${CI_COMMIT_SHA}
-  dependencies:
-    - backend_build
+    - docker build -t ${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA} .
+    - docker tag ${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/e4l-backend:latest
+    - echo "Pushing backend image with tag ${CI_COMMIT_SHA}..."
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-backend:latest
   needs:
     - backend_build
     - backend_unit_test

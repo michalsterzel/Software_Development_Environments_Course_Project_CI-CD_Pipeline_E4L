@@ -13,10 +13,10 @@
 # PORT ASSIGNMENTS:
 # - Backend:  host 8082 -> container 8080
 # - Frontend: host 3002 -> container 80
-# - MySQL:    host 3308 -> container 3306
+# - MariaDB:  host 3308 -> container 3306
 #
 # DATABASE:
-# Separate production database: e4l_prod
+# MariaDB with logical database: e4l_prod
 # Isolated from dev and staging databases.
 #
 # DEPLOYMENT:
@@ -27,36 +27,41 @@ version: '3.8'
 
 services:
   backend:
-    # Image is set via CI_REGISTRY_IMAGE environment variable
-    # Same image that passed staging tests
-    # Original production image (commented for dummy test validation):
-    # image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/backend:latest}
-    # BEGIN DUMMY CI TEST
-    image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-backend:dummy}
-    # END DUMMY CI TEST
+    # Image is set via BACKEND_IMAGE environment variable from CI
+    # Same image that passed staging tests (tagged with commit SHA)
+    # --- DUMMY IMAGE (for infrastructure testing) ---
+    # image: ${BACKEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-backend:dummy}
+    # --- REAL CI-BUILT IMAGE ---
+    image: ${BACKEND_IMAGE:-192.168.56.10:5050/root/e4l/e4l-backend:latest}
     ports:
       - "8082:8080"
     environment:
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_NAME=e4l_prod
-      - DB_USER=produser
-      - DB_PASSWORD=prodpass
-      # Backend team: Ensure production CI/CD variables are configured
-      # Use different secrets than staging for security
+      # Spring Boot datasource configuration for MariaDB
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/e4l_prod?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=rootpass_prod
+      # Application-specific environment variables (use different secrets than staging!)
+      - JWT_SECRET=${JWT_SECRET:-prod-jwt-secret-key-2025}
+      - SIGNATURE_KEY=${SIGNATURE_KEY:-prod-signature-key-2025}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@e4l.lu}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - RESOURCES_STATIC_URL=http://localhost:8082/e4lapi/
+      - DEV_RESOURCES_STATIC_URL=http://localhost:8082/e4lapi/
+      - TZ=Europe/Luxembourg
     depends_on:
       - db
     restart: unless-stopped  # Auto-restart on failure (production resilience)
     networks:
       - prod-network
+    # Allow DB to start before backend attempts connection
+    entrypoint: ["/bin/sh", "-c", "sleep 15 && java -jar /app/app.jar"]
 
   frontend:
     # Same image that passed staging tests
-    # Original production image (commented for dummy test validation):
-    # image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/frontend:latest}
-    # BEGIN DUMMY CI TEST
-    image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-frontend:dummy}
-    # END DUMMY CI TEST
+    # --- DUMMY IMAGE (for infrastructure testing) ---
+    # image: ${FRONTEND_IMAGE:-registry.gitlab.com/e4l/platform/e4l-frontend:dummy}
+    # --- REAL CI-BUILT IMAGE ---
+    image: ${FRONTEND_IMAGE:-192.168.56.10:5050/root/e4l/e4l-frontend:latest}
     ports:
       - "3002:80"
     environment:
@@ -68,20 +73,24 @@ services:
       - prod-network
 
   db:
-    image: mysql:8.0
+    # --- OLD: MySQL 8.0 (replaced with MariaDB) ---
+    # image: mysql:8.0
+    # --- NEW: MariaDB 10.11 LTS ---
+    image: mariadb:10.11
+    container_name: prod-db
     ports:
       - "3308:3306"
     environment:
+      - MARIADB_DATABASE=e4l_prod
+      - MARIADB_ROOT_PASSWORD=rootpass_prod
+      # Legacy MySQL env vars for compatibility
       - MYSQL_DATABASE=e4l_prod
-      - MYSQL_USER=produser
-      - MYSQL_PASSWORD=prodpass
       - MYSQL_ROOT_PASSWORD=rootpass_prod
     volumes:
       - prod-db-data:/var/lib/mysql
     restart: unless-stopped
     networks:
       - prod-network
-    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   prod-db-data:

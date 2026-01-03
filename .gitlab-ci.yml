@@ -44,10 +44,12 @@ stages:
 # Infrastructure orchestrates when jobs run via stage dependencies.
 
 include:
-# Uncomment the following lines to include backend and frontend jobs after dummy tests are done.
-  # - local: ".ci/backend.yml"   # Backend build, test, and image jobs (Jabin)
-  # - local: ".ci/frontend.yml"  # Frontend build, test, and image jobs (Maksym)
-  # - local: ".ci/deploy.yml"    # Deployment and integration test jobs (Michal)
+  # Backend CI jobs (Jabin) - Integrated January 2026
+  - local: ".ci/backend.yml"
+  # Frontend CI jobs (Maksym) - Uncomment when frontend is ready
+  # - local: ".ci/frontend.yml"
+  # Deployment jobs (Michal) - Uncomment when both backend and frontend are ready
+  # - local: ".ci/deploy.yml"
 
 # ============================================================
 # DEFAULT CONFIGURATION

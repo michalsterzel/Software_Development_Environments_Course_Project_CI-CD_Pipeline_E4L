@@ -14,7 +14,7 @@
 # PORT ASSIGNMENTS:
 # - Backend:  host 8080 → container 8080
 # - Frontend: host 3000 → container 80
-# - MySQL:    host 3306 → container 3306
+# - MariaDB:  host 3306 → container 3306
 # ============================================================
 
 version: '3.8'
@@ -27,17 +27,24 @@ services:
     ports:
       - "8080:8080"  # Spring Boot default port
     environment:
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_NAME=e4l_dev
-      - DB_USER=devuser
-      - DB_PASSWORD=devpass
-      # Backend team: Add additional env vars as needed
-      # (JWT_SECRET, SIGNATURE_KEY, ADMIN_EMAIL, etc.)
+      # Spring Boot datasource configuration for MariaDB
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/e4l_dev?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=rootpass
+      # Application-specific environment variables
+      - JWT_SECRET=dev-jwt-secret-key-2025
+      - SIGNATURE_KEY=dev-signature-key-2025
+      - ADMIN_EMAIL=admin@e4l.lu
+      - ADMIN_PASSWORD=admin123
+      - RESOURCES_STATIC_URL=http://localhost:8080/e4lapi/
+      - DEV_RESOURCES_STATIC_URL=http://localhost:8080/e4lapi/
+      - TZ=Europe/Luxembourg
     depends_on:
       - db
     networks:
       - dev-network
+    # Allow DB to start before backend attempts connection
+    entrypoint: ["/bin/sh", "-c", "sleep 15 && java -jar /app/app.jar"]
 
   frontend:
     build:
@@ -53,19 +60,23 @@ services:
       - dev-network
 
   db:
-    image: mysql:8.0
+    # --- OLD: MySQL 8.0 (replaced with MariaDB) ---
+    # image: mysql:8.0
+    # --- NEW: MariaDB 10.11 LTS ---
+    image: mariadb:10.11
+    container_name: dev-db
     ports:
       - "3306:3306"
     environment:
+      - MARIADB_DATABASE=e4l_dev
+      - MARIADB_ROOT_PASSWORD=rootpass
+      # Legacy MySQL env vars for compatibility
       - MYSQL_DATABASE=e4l_dev
-      - MYSQL_USER=devuser
-      - MYSQL_PASSWORD=devpass
       - MYSQL_ROOT_PASSWORD=rootpass
     volumes:
       - dev-db-data:/var/lib/mysql
     networks:
       - dev-network
-    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   dev-db-data:
