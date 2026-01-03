@@ -23,9 +23,19 @@ module.exports = env => {
                 {
                     test: /\.js$/,
                     exclude: /node_modules/,
-                    loader: "babel-loader",
-                    query: {
-                        plugins: ['transform-class-properties']
+                    use: {
+                        loader: "babel-loader",
+                        options: {
+                            presets: [
+                                ["env", { modules: false }],
+                                "react",
+                                "stage-3"
+                            ],
+                            plugins: [
+                                "transform-class-properties",
+                                "transform-object-rest-spread"
+                            ]
+                        }
                     }
                 },
                 {
