@@ -417,7 +417,7 @@ describe('Questionnaire Backend Integration Tests', () => {
     });
     
     assert.strictEqual(state.fetching, false, 'Should stop fetching');
-    assert.strictEqual(state.error, true, 'Should set error flag');
+    assert.ok(state.error, 'Should set error (stores error object, not boolean)');
   });
 
 });
