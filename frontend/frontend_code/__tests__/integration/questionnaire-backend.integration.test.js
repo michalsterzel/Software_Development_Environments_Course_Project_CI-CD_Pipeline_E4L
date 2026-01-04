@@ -351,8 +351,8 @@ describe('Questionnaire Backend Integration Tests', () => {
         `Question ${index}: id must be a number, got ${typeof question.id}`
       );
       assert.ok(
-        typeof question.text === 'string',
-        `Question ${index}: text must be a string, got ${typeof question.text}`
+        typeof question.name === 'string',
+        `Question ${index}: name must be a string, got ${typeof question.name}`
       );
       assert.ok(
         Array.isArray(question.possibleAnswers),
@@ -365,10 +365,10 @@ describe('Questionnaire Backend Integration Tests', () => {
           typeof answer.id === 'number',
           `Question ${index}, Answer ${answerIndex}: id must be a number`
         );
-        // text can be string or null (backend sets it to null sometimes)
+        // name field from backend
         assert.ok(
-          answer.text === null || typeof answer.text === 'string',
-          `Question ${index}, Answer ${answerIndex}: text must be string or null`
+          answer.name === null || typeof answer.name === 'string',
+          `Question ${index}, Answer ${answerIndex}: name must be string or null`
         );
       });
     });
