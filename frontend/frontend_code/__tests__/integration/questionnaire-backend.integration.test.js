@@ -195,14 +195,14 @@ describe('Questionnaire Backend Integration Tests', () => {
     // Assert: Each question has correct structure
     const firstQuestion = response.data[0];
     assert.ok(firstQuestion.id, 'Question should have id field');
-    assert.ok(firstQuestion.text, 'Question should have text field');
+    assert.ok(firstQuestion.name, 'Question should have name field');
     assert.ok(Array.isArray(firstQuestion.possibleAnswers), 'Question should have possibleAnswers array');
     
     // Assert: Possible answers have correct structure
     if (firstQuestion.possibleAnswers.length > 0) {
       const firstAnswer = firstQuestion.possibleAnswers[0];
       assert.ok(firstAnswer.id, 'Answer should have id field');
-      assert.ok(firstAnswer.text !== undefined, 'Answer should have text field');
+      assert.ok(firstAnswer.name !== undefined, 'Answer should have name field');
     }
     
     console.log(`    ℹ Backend returned ${response.data.length} questions`);
