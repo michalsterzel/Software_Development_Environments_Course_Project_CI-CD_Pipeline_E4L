@@ -61,8 +61,6 @@ backend_integration_test:
       - backend/backend_code/build/reports/tests/test/
     reports:
       junit: backend/backend_code/build/test-results/test/**/TEST-*.xml
-  needs:
-    - backend_build
   allow_failure: false
 
 # Build and push backend Docker image
