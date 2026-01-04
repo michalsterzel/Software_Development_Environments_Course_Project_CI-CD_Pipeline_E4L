@@ -152,16 +152,17 @@ describe('Calculator Backend Integration Tests', () => {
    */
   it('should submit session to backend and receive session ID', async () => {
     // Arrange: Create realistic session object
+    // Using valid possibleAnswer IDs from questionnaire: 5 (In a flat), 12 (im_omnivorous)
     const testSession = {
       sessionId: null,
       iskid: false,
       answers: [
         {
-          possibleAnswer: { id: 1 },
+          possibleAnswer: { id: 5 },
           variableValues: []
         },
         {
-          possibleAnswer: { id: 2 },
+          possibleAnswer: { id: 12 },
           variableValues: [{ variable: { id: 13 }, value: 50 }]
         }
       ]
@@ -220,12 +221,13 @@ describe('Calculator Backend Integration Tests', () => {
    */
   it('should submit session with seminar code', async () => {
     // Arrange: Session with seminar code
+    // Using valid possibleAnswer ID 5 (In a flat) from questionnaire
     const testSession = {
       sessionId: null,
       iskid: false,
       answers: [
         {
-          possibleAnswer: { id: 1 },
+          possibleAnswer: { id: 5 },
           variableValues: []
         }
       ]
@@ -292,20 +294,21 @@ describe('Calculator Backend Integration Tests', () => {
    */
   it('should calculate energy consumption from session', async () => {
     // Arrange: First save a session to get session ID
+    // Using valid possibleAnswer IDs: 5 (In a flat), 12 (im_omnivorous), 9 (I'm vegan)
     const testSession = {
       sessionId: null,
       iskid: false,
       answers: [
         {
-          possibleAnswer: { id: 1 },
+          possibleAnswer: { id: 5 },
           variableValues: []
         },
         {
-          possibleAnswer: { id: 5 },
+          possibleAnswer: { id: 12 },
           variableValues: [{ variable: { id: 13 }, value: 100 }]
         },
         {
-          possibleAnswer: { id: 10 },
+          possibleAnswer: { id: 9 },
           variableValues: []
         }
       ]
@@ -383,7 +386,7 @@ describe('Calculator Backend Integration Tests', () => {
       sessionId: null,
       iskid: false,
       answers: [
-        { possibleAnswer: { id: 1 }, variableValues: [] }
+        { possibleAnswer: { id: 5 }, variableValues: [] }
       ]
     };
     
@@ -508,9 +511,9 @@ describe('Calculator Backend Integration Tests', () => {
       sessionId: null,
       iskid: false,
       answers: [
-        { possibleAnswer: { id: 1 }, variableValues: [] },
-        { possibleAnswer: { id: 3 }, variableValues: [] },
-        { possibleAnswer: { id: 7 }, variableValues: [{ variable: { id: 13 }, value: 120 }] }
+        { possibleAnswer: { id: 5 }, variableValues: [] },
+        { possibleAnswer: { id: 12 }, variableValues: [] },
+        { possibleAnswer: { id: 12 }, variableValues: [{ variable: { id: 13 }, value: 120 }] }
       ]
     };
     
