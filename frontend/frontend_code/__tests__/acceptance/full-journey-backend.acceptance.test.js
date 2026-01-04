@@ -224,7 +224,7 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     const questions = questionnaireState.questionnaire.questions;
     console.log('✓ Questions loaded and stored in state');
     console.log(`  - Total questions: ${questions.length}`);
-    const firstQuestionText = questions[0] && questions[0].text ? questions[0].text.substring(0, 50) : 'N/A';
+    const firstQuestionText = questions[0] && questions[0].name ? questions[0].name.substring(0, 50) : 'N/A';
     console.log(`  - First question: "${firstQuestionText}..."`);
     console.log('');
     
@@ -239,8 +239,8 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     const question1 = questions[0];
     const answer1 = question1.possibleAnswers[0];
     
-    console.log(`Question 1: "${question1.text}"`);
-    console.log(`User selects: "${answer1.text}" (ID: ${answer1.id})`);
+    console.log(`Question 1: "${question1.name}"`);
+    console.log(`User selects: "${answer1.name}" (ID: ${answer1.id})`);
     
     answerState = answerReducer(answerState, {
       type: 'SELECT_ANSWER',
@@ -264,8 +264,8 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     const question2 = questions[1];
     const answer2 = question2.possibleAnswers[0];
     
-    console.log(`Question 2: "${question2.text}"`);
-    console.log(`User selects: "${answer2.text}" (ID: ${answer2.id})`);
+    console.log(`Question 2: "${question2.name}"`);
+    console.log(`User selects: "${answer2.name}" (ID: ${answer2.id})`);
     console.log(`User enters variable: 75`);
     
     answerState = answerReducer(answerState, {
@@ -290,8 +290,8 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     const question3 = questions[2];
     const answer3 = question3.possibleAnswers[Math.min(1, question3.possibleAnswers.length - 1)];
     
-    console.log(`Question 3: "${question3.text}"`);
-    console.log(`User selects: "${answer3.text}" (ID: ${answer3.id})`);
+    console.log(`Question 3: "${question3.name}"`);
+    console.log(`User selects: "${answer3.name}" (ID: ${answer3.id})`);
     
     answerState = answerReducer(answerState, {
       type: 'SELECT_ANSWER',
@@ -318,10 +318,7 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     const sessionToSubmit = {
       sessionId: null,
       iskid: false,
-      session: {
-        answers: answerState.session.answers,
-        seminar_access_code: null
-      }
+      answers: answerState.session.answers
     };
     
     // Dispatch PENDING
