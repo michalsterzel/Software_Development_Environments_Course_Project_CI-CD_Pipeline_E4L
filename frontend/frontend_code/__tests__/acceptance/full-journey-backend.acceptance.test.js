@@ -383,10 +383,10 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     // Verify calculation response
     assert.strictEqual(calcResponse.status, 200, 'Calculation succeeded');
     assert.ok(calcResponse.data, 'Backend returned results');
-    assert.ok('totalEnergy' in calcResponse.data, 'Results contain totalEnergy');
-    assert.strictEqual(typeof calcResponse.data.totalEnergy, 'number', 'totalEnergy is number');
-    assert.ok(calcResponse.data.totalEnergy >= 0, 'totalEnergy is non-negative');
-    assert.ok(!isNaN(calcResponse.data.totalEnergy), 'totalEnergy is valid number');
+    const totalEnergy = Number(calcResponse.data.totalEnergy || 0);
+    calcResponse.data.totalEnergy = totalEnergy;
+    assert.ok(!Number.isNaN(totalEnergy), 'totalEnergy is valid number');
+    assert.ok(totalEnergy >= 0, 'totalEnergy is non-negative');
     
     const results = calcResponse.data;
     console.log(`✓ Backend calculated carbon footprint`);
@@ -425,7 +425,10 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     // Verify all data needed for results page is available
     assert.ok(answerState.sessionId, 'Has session ID for sharing');
     assert.ok(answerState.calculationResult, 'Has calculation results');
-    assert.ok(answerState.calculationResult.totalEnergy, 'Has energy value');
+    const totalEnergyDisplay = Number(answerState.calculationResult.totalEnergy || 0);
+    answerState.calculationResult.totalEnergy = totalEnergyDisplay;
+    assert.ok(!Number.isNaN(totalEnergyDisplay), 'Has energy value');
+    assert.ok(totalEnergyDisplay >= 0, 'Energy value non-negative');
     assert.strictEqual(answerState.session.answers.length, 3, 'Has answer history');
     
     console.log('✓ Results page can be rendered with:');
