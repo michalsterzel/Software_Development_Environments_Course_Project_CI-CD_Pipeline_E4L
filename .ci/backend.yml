@@ -46,6 +46,25 @@ backend_unit_test:
   dependencies:
     - backend_build
 
+# Run backend integration tests (only integration package)
+backend_integration_test:
+  stage: integration_test
+  image: gradle:8.5-jdk17
+  script:
+    - cd backend/backend_code
+    - chmod +x gradlew
+    - echo "Running backend integration tests (integration package only)..."
+    - ./gradlew test --no-daemon --tests "lu.uni.e4l.platform.integration.*"
+  artifacts:
+    when: always
+    paths:
+      - backend/backend_code/build/reports/tests/test/
+    reports:
+      junit: backend/backend_code/build/test-results/test/**/TEST-*.xml
+  needs:
+    - backend_build
+  allow_failure: false
+
 # Build and push backend Docker image
 backend_image:
   stage: image
