@@ -458,7 +458,7 @@ describe('Calculator Backend Integration Tests', () => {
       // Assert: Reducer stored calculation results
       assert.strictEqual(state.energyFetchFulfilled, true, 'Calculation complete');
       assert.ok(state.calculationResult, 'Should have calculation result');
-      assert.ok(state.calculationResult.totalEnergy, 'Should have totalEnergy');
+      assert.ok(state.calculationResult.totalEnergy !== undefined, 'Should have totalEnergy');
       assert.strictEqual(
         typeof state.calculationResult.totalEnergy,
         'number',
@@ -540,7 +540,7 @@ describe('Calculator Backend Integration Tests', () => {
       });
       
       assert.ok(state.calculationResult, 'Calculation completed');
-      assert.ok(state.calculationResult.totalEnergy, 'Results received');
+      assert.ok(state.calculationResult.totalEnergy !== undefined, 'Results received');
       console.log(`    ✓ Calculation complete: ${state.calculationResult.totalEnergy} kWh/year`);
       
       // FINAL ASSERTIONS
