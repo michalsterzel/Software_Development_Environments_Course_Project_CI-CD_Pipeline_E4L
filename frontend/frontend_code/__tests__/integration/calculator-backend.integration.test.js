@@ -447,13 +447,10 @@ describe('Calculator Backend Integration Tests', () => {
     const testSession = {
       sessionId: null,
       iskid: false,
-      session: {
-        answers: [
-          { possibleAnswer: { id: 1 }, variable: null },
-          { possibleAnswer: { id: 5 }, variable: { value: 80 } }
-        ],
-        seminar_access_code: null
-      }
+      answers: [
+        { possibleAnswer: { id: 1 }, variableValues: [] },
+        { possibleAnswer: { id: 5 }, variableValues: [{ variable: { id: 13 }, value: 80 }] }
+      ]
     };
     
     const saveAction = sendSession(testSession);
