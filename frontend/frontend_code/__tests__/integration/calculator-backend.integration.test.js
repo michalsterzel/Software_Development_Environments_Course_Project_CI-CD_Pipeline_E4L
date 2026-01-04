@@ -155,19 +155,16 @@ describe('Calculator Backend Integration Tests', () => {
     const testSession = {
       sessionId: null,
       iskid: false,
-      session: {
-        answers: [
-          {
-            possibleAnswer: { id: 1 },
-            variable: null
-          },
-          {
-            possibleAnswer: { id: 2 },
-            variable: { value: 50 }
-          }
-        ],
-        seminar_access_code: null
-      }
+      answers: [
+        {
+          possibleAnswer: { id: 1 },
+          variableValues: []
+        },
+        {
+          possibleAnswer: { id: 2 },
+          variableValues: [{ variable: { id: 13 }, value: 50 }]
+        }
+      ]
     };
     
     // Act: Call REAL frontend action creator
@@ -226,15 +223,12 @@ describe('Calculator Backend Integration Tests', () => {
     const testSession = {
       sessionId: null,
       iskid: false,
-      session: {
-        answers: [
-          {
-            possibleAnswer: { id: 1 },
-            variable: null
-          }
-        ],
-        seminar_access_code: 'TEST_SEMINAR_2024'
-      }
+      answers: [
+        {
+          possibleAnswer: { id: 1 },
+          variableValues: []
+        }
+      ]
     };
     
     const seminarCode = 'TEST_SEMINAR_2024';
@@ -301,23 +295,20 @@ describe('Calculator Backend Integration Tests', () => {
     const testSession = {
       sessionId: null,
       iskid: false,
-      session: {
-        answers: [
-          {
-            possibleAnswer: { id: 1 },
-            variable: null
-          },
-          {
-            possibleAnswer: { id: 5 },
-            variable: { value: 100 }
-          },
-          {
-            possibleAnswer: { id: 10 },
-            variable: null
-          }
-        ],
-        seminar_access_code: null
-      }
+      answers: [
+        {
+          possibleAnswer: { id: 1 },
+          variableValues: []
+        },
+        {
+          possibleAnswer: { id: 5 },
+          variableValues: [{ variable: { id: 13 }, value: 100 }]
+        },
+        {
+          possibleAnswer: { id: 10 },
+          variableValues: []
+        }
+      ]
     };
     
     // Save session first
@@ -391,12 +382,9 @@ describe('Calculator Backend Integration Tests', () => {
     const testSession = {
       sessionId: null,
       iskid: false,
-      session: {
-        answers: [
-          { possibleAnswer: { id: 1 }, variable: null }
-        ],
-        seminar_access_code: null
-      }
+      answers: [
+        { possibleAnswer: { id: 1 }, variableValues: [] }
+      ]
     };
     
     // Act: Dispatch PENDING
@@ -519,14 +507,11 @@ describe('Calculator Backend Integration Tests', () => {
     const testSession = {
       sessionId: null,
       iskid: false,
-      session: {
-        answers: [
-          { possibleAnswer: { id: 1 }, variable: null },
-          { possibleAnswer: { id: 3 }, variable: null },
-          { possibleAnswer: { id: 7 }, variable: { value: 120 } }
-        ],
-        seminar_access_code: null
-      }
+      answers: [
+        { possibleAnswer: { id: 1 }, variableValues: [] },
+        { possibleAnswer: { id: 3 }, variableValues: [] },
+        { possibleAnswer: { id: 7 }, variableValues: [{ variable: { id: 13 }, value: 120 }] }
+      ]
     };
     
     // PHASE 1: Submit Session
@@ -595,10 +580,7 @@ describe('Calculator Backend Integration Tests', () => {
     const invalidSession = {
       sessionId: null,
       iskid: false,
-      session: {
-        answers: [],  // Empty answers - invalid
-        seminar_access_code: null
-      }
+      answers: []  // Empty answers - invalid
     };
     
     // Act: Try to submit invalid session
