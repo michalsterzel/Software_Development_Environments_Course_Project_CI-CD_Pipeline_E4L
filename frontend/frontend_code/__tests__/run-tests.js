@@ -38,25 +38,42 @@ console.log('  E4L Frontend Test Suite');
 console.log('  Testing with REAL source imports');
 console.log('========================================\n');
 
-const testFiles = [
-  // Unit Tests - Reducers
-  '__tests__/unit/navReducer.test.js',
-  '__tests__/unit/contactReducer.test.js', 
-  '__tests__/unit/answerReducer.test.js',
-  
-  // Unit Tests - Actions
-  '__tests__/unit/navAction.test.js',
-  
-  // Integration Tests
-  '__tests__/integration/store.integration.test.js',
-  '__tests__/integration/actions.integration.test.js',
-  '__tests__/integration/calculator-backend.integration.test.js',
-  '__tests__/integration/questionnaire-backend.integration.test.js',
-  
-  // Acceptance Tests
-  '__tests__/acceptance/questionnaire.acceptance.test.js',
-  '__tests__/acceptance/full-journey-backend.acceptance.test.js'
-];
+// Get test files based on environment variable or command line arg
+const testType = process.env.TEST_TYPE || process.argv[2] || 'all';
+
+const allTestFiles = {
+  unit: [
+    // Unit Tests - Reducers
+    '__tests__/unit/navReducer.test.js',
+    '__tests__/unit/contactReducer.test.js', 
+    '__tests__/unit/answerReducer.test.js',
+    // Unit Tests - Actions
+    '__tests__/unit/navAction.test.js',
+  ],
+  integration: [
+    // Integration Tests (client-side)
+    '__tests__/integration/store.integration.test.js',
+    '__tests__/integration/actions.integration.test.js',
+    // Integration Tests (require backend)
+    '__tests__/integration/calculator-backend.integration.test.js',
+    '__tests__/integration/questionnaire-backend.integration.test.js',
+  ],
+  acceptance: [
+    // Acceptance Tests
+    '__tests__/acceptance/questionnaire.acceptance.test.js',
+    '__tests__/acceptance/full-journey-backend.acceptance.test.js'
+  ]
+};
+
+// Determine which tests to run
+let testFiles = [];
+if (testType === 'unit') {
+  testFiles = allTestFiles.unit;
+} else if (testType === 'integration') {
+  testFiles = [...allTestFiles.integration, ...allTestFiles.acceptance];
+} else {
+  testFiles = [...allTestFiles.unit, ...allTestFiles.integration, ...allTestFiles.acceptance];
+}
 
 let passedTests = 0;
 let failedTests = 0;

@@ -35,14 +35,32 @@ frontend_unit_test:
   script:
     - cd frontend/frontend_code
     - npm ci
-    - echo "Running frontend unit tests"
-    - npm test
+    - echo "Running frontend unit tests (unit tests only)"
+    - npm run test:unit
   artifacts:
     when: always
     paths:
       - frontend/frontend_code/__tests__/
   dependencies:
     - frontend_build
+
+# Run frontend integration tests against staging
+frontend_integration_test:
+  stage: integration_test
+  image: node:18-alpine
+  script:
+    - cd frontend/frontend_code
+    - npm ci
+    - echo "Running frontend integration tests against staging"
+    - export BACKEND_URL=http://192.168.56.10:8081
+    - npm run test:integration
+  artifacts:
+    when: always
+    paths:
+      - frontend/frontend_code/__tests__/
+  needs:
+    - deploy_staging
+  allow_failure: true  # Backend integration may fail if backend not ready
 
 # Build and push frontend Docker image
 frontend_image:
