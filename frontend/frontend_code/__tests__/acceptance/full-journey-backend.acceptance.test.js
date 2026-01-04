@@ -260,24 +260,23 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     assert.strictEqual(questionnaireState.currentQuestion, 1, 'Moved to question 2');
     console.log('✓ Navigated to next question\n');
     
-    // Question 2: User selects answer with variable input
+    // Question 2: User selects answer (no variable needed for "I'm vegan")
     const question2 = questions[1];
-    const answer2 = question2.possibleAnswers[0];
+    const answer2 = question2.possibleAnswers[0]; // "I'm vegan" - no variables
     
     console.log(`Question 2: "${question2.name}"`);
     console.log(`User selects: "${answer2.name}" (ID: ${answer2.id})`);
-    console.log(`User enters variable: 75`);
     
     answerState = answerReducer(answerState, {
       type: 'SELECT_ANSWER',
       payload: {
         possibleAnswerId: answer2.id,
-        variable: { value: 75 }
+        variable: null
       }
     });
     
     assert.strictEqual(answerState.session.answers.length, 2, 'Second answer recorded');
-    console.log('✓ Answer 2 saved with variable\n');
+    console.log('✓ Answer 2 saved\n');
     
     // Navigate to next question
     questionnaireState = questionnaireReducer(questionnaireState, {
