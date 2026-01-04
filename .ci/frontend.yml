@@ -93,7 +93,7 @@ frontend_integration_test:
     - >
       READY=
       ; for i in $(seq 1 30); do
-        if docker-compose exec -T backend curl -sf http://localhost:8080/e4lapi/questionnaire; then READY=1; break; fi;
+        if curl -sf http://backend:8080/e4lapi/questionnaire > /dev/null 2>&1; then READY=1; break; fi;
         sleep 2;
       done
       ; if [ -z "$READY" ]; then
