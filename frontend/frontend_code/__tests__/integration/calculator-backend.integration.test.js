@@ -100,6 +100,36 @@ function computeEnergy(session) {
   };
 }
 
+/**
+ * HELPER: Create a complete valid session
+ * 
+ * The backend requires answers for ALL questions that have minAnswersNumber > 0.
+ * From the questionnaire:
+ * - Question 4 (Electricity/heating): min 1, max 1 - REQUIRED
+ * - Question 8 (Diet): min 1, max 1 - REQUIRED
+ * - Question 17 (Pets): min 0, max 3 - optional
+ * - Question 27 (Transport): min 0, max 6 - optional
+ * - Question 57 (Work): min 0, max 1 - optional
+ * - Question 63 (Holiday travel): min 0, max 7 - optional
+ * - Question 93 (Embodied energy): min 1, max 1 - REQUIRED
+ */
+function createCompleteValidSession() {
+  return {
+    sessionId: null,
+    iskid: false,
+    answers: [
+      // Question 4 - Electricity/heating (REQUIRED): Answer "In a flat" (id: 5)
+      { possibleAnswer: { id: 5 }, variableValues: [] },
+      
+      // Question 8 - Diet (REQUIRED): Answer "I'm vegan" (id: 9)
+      { possibleAnswer: { id: 9 }, variableValues: [] },
+      
+      // Question 93 - Embodied energy (REQUIRED): Answer "low" (id: 94)
+      { possibleAnswer: { id: 94 }, variableValues: [] }
+    ]
+  };
+}
+
 function describe(suiteName, fn) {
   console.log('\n' + suiteName);
   fn();
@@ -152,21 +182,8 @@ describe('Calculator Backend Integration Tests', () => {
    */
   it('should submit session to backend and receive session ID', async () => {
     // Arrange: Create realistic session object
-    // Using valid possibleAnswer IDs from questionnaire: 5 (In a flat), 12 (im_omnivorous)
-    const testSession = {
-      sessionId: null,
-      iskid: false,
-      answers: [
-        {
-          possibleAnswer: { id: 5 },
-          variableValues: []
-        },
-        {
-          possibleAnswer: { id: 12 },
-          variableValues: [{ variable: { id: 13 }, value: 50 }]
-        }
-      ]
-    };
+    // Must include answers for all REQUIRED questions (min >= 1)
+    const testSession = createCompleteValidSession();
     
     // Act: Call REAL frontend action creator
     const action = sendSession(testSession);
@@ -221,17 +238,8 @@ describe('Calculator Backend Integration Tests', () => {
    */
   it('should submit session with seminar code', async () => {
     // Arrange: Session with seminar code
-    // Using valid possibleAnswer ID 5 (In a flat) from questionnaire
-    const testSession = {
-      sessionId: null,
-      iskid: false,
-      answers: [
-        {
-          possibleAnswer: { id: 5 },
-          variableValues: []
-        }
-      ]
-    };
+    // Must include answers for all REQUIRED questions
+    const testSession = createCompleteValidSession();
     
     const seminarCode = 'TEST_SEMINAR_2024';
     
@@ -294,25 +302,8 @@ describe('Calculator Backend Integration Tests', () => {
    */
   it('should calculate energy consumption from session', async () => {
     // Arrange: First save a session to get session ID
-    // Using valid possibleAnswer IDs: 5 (In a flat), 12 (im_omnivorous), 9 (I'm vegan)
-    const testSession = {
-      sessionId: null,
-      iskid: false,
-      answers: [
-        {
-          possibleAnswer: { id: 5 },
-          variableValues: []
-        },
-        {
-          possibleAnswer: { id: 12 },
-          variableValues: [{ variable: { id: 13 }, value: 100 }]
-        },
-        {
-          possibleAnswer: { id: 9 },
-          variableValues: []
-        }
-      ]
-    };
+    // Must include answers for all REQUIRED questions
+    const testSession = createCompleteValidSession();
     
     // Save session first
     const saveAction = sendSession(testSession);
@@ -382,13 +373,7 @@ describe('Calculator Backend Integration Tests', () => {
     assert.strictEqual(state.sessionId, null, 'Initially no session ID');
     
     // Arrange: Create session
-    const testSession = {
-      sessionId: null,
-      iskid: false,
-      answers: [
-        { possibleAnswer: { id: 5 }, variableValues: [] }
-      ]
-    };
+    const testSession = createCompleteValidSession();
     
     // Act: Dispatch PENDING
     state = answerReducer(state, { type: 'SEND_SESSION_PENDING' });
@@ -445,14 +430,7 @@ describe('Calculator Backend Integration Tests', () => {
    */
   it('should process backend calculation through frontend reducer', async () => {
     // Arrange: Save session first
-    const testSession = {
-      sessionId: null,
-      iskid: false,
-      answers: [
-        { possibleAnswer: { id: 5 }, variableValues: [] },
-        { possibleAnswer: { id: 12 }, variableValues: [{ variable: { id: 13 }, value: 80 }] }
-      ]
-    };
+    const testSession = createCompleteValidSession();
     
     try {
       const saveAction = sendSession(testSession);
@@ -527,15 +505,7 @@ describe('Calculator Backend Integration Tests', () => {
     // Arrange: User completed questionnaire
     let state = answerReducer(undefined, {});
     
-    const testSession = {
-      sessionId: null,
-      iskid: false,
-      answers: [
-        { possibleAnswer: { id: 5 }, variableValues: [] },
-        { possibleAnswer: { id: 12 }, variableValues: [] },
-        { possibleAnswer: { id: 12 }, variableValues: [{ variable: { id: 13 }, value: 120 }] }
-      ]
-    };
+    const testSession = createCompleteValidSession();
     
     // PHASE 1: Submit Session
     console.log('    ℹ Phase 1: Submitting session...');
