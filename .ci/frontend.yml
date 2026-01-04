@@ -92,12 +92,15 @@ frontend_integration_test:
     - echo "Waiting for backend readiness (actuator)..."
     - >
       READY=
-      ; for i in $(seq 1 60); do
-        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -sf http://backend:8080/e4lapi/actuator/health > /dev/null 2>&1; then READY=1; break; fi;
+      ; for i in $(seq 1 90); do
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -sf http://backend:8080/e4lapi/actuator/health > /dev/null 2>&1; then READY=1; echo "Backend ready after $i attempts"; break; fi;
+        echo "Attempt $i/90 - waiting for backend...";
         sleep 2;
       done
       ; if [ -z "$READY" ]; then
-        echo "ERROR: Backend did not become ready after 60 attempts (120s)";
+        echo "ERROR: Backend did not become ready after 90 attempts (180s)";
+        echo "Checking if actuator endpoint exists...";
+        docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -v http://backend:8080/e4lapi/actuator/health || true;
         docker-compose logs backend;
         exit 1;
       fi
