@@ -44,26 +44,81 @@ frontend_unit_test:
   dependencies:
     - frontend_build
 
-# Run frontend integration tests against staging
+# Run frontend integration tests with full stack alive during tests
 frontend_integration_test:
   stage: integration_test
   image: node:18-alpine
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  variables:
+    COMPOSE_PROJECT_NAME: frontendint
   script:
-    - cd frontend/frontend_code
-    - apk add --no-cache curl
-    - npm ci
-    - echo "Running frontend integration tests against staging"
-    - export BACKEND_URL=http://192.168.56.10:8081/e4lapi
-    # Skip if backend not reachable (keeps pipeline green when env is down)
-    - if ! curl -sf ${BACKEND_URL}/questionnaire; then echo "Backend not reachable, skipping integration tests"; exit 0; fi
-    - npm run test:integration
+    - apk add --no-cache docker docker-compose bash curl
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+    - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
+    - export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA}"
+    - cd infra/staging
+    - docker-compose down || true
+    - docker-compose pull
+    - docker-compose up -d
+    - echo "Checking service health..."
+    - docker-compose ps
+    - |
+      # Check if all services are running
+      BACKEND_UP=$(docker-compose ps backend | grep -c "Up")
+      FRONTEND_UP=$(docker-compose ps frontend | grep -c "Up")
+      DB_UP=$(docker-compose ps db | grep -c "Up")
+      
+      if [ "$BACKEND_UP" != "1" ]; then
+        echo "ERROR: Backend service failed to start"
+        docker-compose logs backend
+        exit 1
+      fi
+      
+      if [ "$FRONTEND_UP" != "1" ]; then
+        echo "ERROR: Frontend service failed to start"
+        docker-compose logs frontend
+        exit 1
+      fi
+      
+      if [ "$DB_UP" != "1" ]; then
+        echo "ERROR: Database service failed to start"
+        docker-compose logs db
+        exit 1
+      fi
+      
+      echo "All services are running"
+    - echo "Waiting for backend readiness..."
+    - >
+      READY=
+      ; for i in $(seq 1 30); do
+        if docker-compose exec -T backend curl -sf http://localhost:8080/e4lapi/questionnaire; then READY=1; break; fi;
+        sleep 2;
+      done
+      ; if [ -z "$READY" ]; then
+        echo "ERROR: Backend did not become ready after 30 attempts";
+        docker-compose logs backend;
+        exit 1;
+      fi
+    - |
+      docker run --rm \
+        --network ${COMPOSE_PROJECT_NAME}_staging-network \
+        -v "$CI_PROJECT_DIR/frontend/frontend_code":/workspace \
+        -w /workspace \
+        node:18-alpine \
+        sh -c "apk add --no-cache curl && npm ci && BACKEND_URL=http://backend:8080/e4lapi npm run test:integration"
+  after_script:
+    - cd infra/staging
+    - docker-compose down || true
   artifacts:
     when: always
     paths:
       - frontend/frontend_code/__tests__/
   needs:
-    - deploy_staging
-  allow_failure: true  # Backend integration may fail if backend not ready
+    - backend_image
+    - frontend_image
+  allow_failure: false
 
 # Build and push frontend Docker image
 frontend_image:
