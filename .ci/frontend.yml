@@ -118,6 +118,7 @@ frontend_integration_test:
   needs:
     - backend_image
     - frontend_image
+    - deploy_staging
   allow_failure: false
 
 # Build and push frontend Docker image
