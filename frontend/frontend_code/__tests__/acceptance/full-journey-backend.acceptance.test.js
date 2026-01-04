@@ -286,9 +286,13 @@ describe('Complete User Journey - Backend Integration Acceptance Test', () => {
     assert.strictEqual(questionnaireState.currentQuestion, 2, 'Moved to question 3');
     console.log('✓ Navigated to next question\n');
     
-    // Question 3: User selects third answer
-    const question3 = questions[2];
-    const answer3 = question3.possibleAnswers[Math.min(1, question3.possibleAnswers.length - 1)];
+    // Question 3: Answer the 7th question (index 6) - "Embodied Energy" (REQUIRED)
+    // Backend requires answers for ALL questions with minAnswersNumber=1:
+    // - Q4 (Electricity/heating) - index 0 - answered
+    // - Q8 (Diet) - index 1 - answered  
+    // - Q93 (Embodied energy) - index 6 - need to answer this one
+    const question3 = questions[6]; // Index 6 = Q93 (Embodied energy)
+    const answer3 = question3.possibleAnswers[0]; // "low embodied energy"
     
     console.log(`Question 3: "${question3.name}"`);
     console.log(`User selects: "${answer3.name}" (ID: ${answer3.id})`);
