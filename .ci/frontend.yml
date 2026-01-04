@@ -15,36 +15,34 @@
 # ============================================================
 
 # Build frontend application
-# TEMPORARILY DISABLED - comment out to speed up integration test debugging
-# frontend_build:
-#   stage: build
-#   image: node:18-alpine
-#   script:
-#     - cd frontend/frontend_code
-#     - npm ci
-#     - echo "Building frontend with Webpack"
-#     - npm run build
-#   artifacts:
-#     paths:
-#       - frontend/frontend_code/e4l.frontend.docker/web/dist/
-#     expire_in: 1 hour
+frontend_build:
+  stage: build
+  image: node:18-alpine
+  script:
+    - cd frontend/frontend_code
+    - npm ci
+    - echo "Building frontend with Webpack"
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/frontend_code/e4l.frontend.docker/web/dist/
+    expire_in: 1 hour
 
 # Run frontend unit tests
-# TEMPORARILY DISABLED - comment out to speed up integration test debugging
-# frontend_unit_test:
-#   stage: unit_test
-#   image: node:18-alpine
-#   script:
-#     - cd frontend/frontend_code
-#     - npm ci
-#     - echo "Running frontend unit tests (unit tests only)"
-#     - npm run test:unit
-#   artifacts:
-#     when: always
-#     paths:
-#       - frontend/frontend_code/__tests__/
-#   dependencies:
-#     - frontend_build
+frontend_unit_test:
+  stage: unit_test
+  image: node:18-alpine
+  script:
+    - cd frontend/frontend_code
+    - npm ci
+    - echo "Running frontend unit tests (unit tests only)"
+    - npm run test:unit
+  artifacts:
+    when: always
+    paths:
+      - frontend/frontend_code/__tests__/
+  dependencies:
+    - frontend_build
 
 # Run frontend integration tests against staging
 frontend_integration_test:
@@ -63,30 +61,28 @@ frontend_integration_test:
     when: always
     paths:
       - frontend/frontend_code/__tests__/
-  # TEMPORARILY REMOVED for faster debugging - re-add after testing
-  # needs:
-  #   - deploy_staging
+  needs:
+    - deploy_staging
   allow_failure: true  # Backend integration may fail if backend not ready
 
 # Build and push frontend Docker image
-# TEMPORARILY DISABLED - comment out to speed up integration test debugging
-# frontend_image:
-#   stage: image
-#   image: docker:24-cli
-#   services:
-#     - name: docker:24-dind
-#       command: ["--insecure-registry=192.168.56.10:5050"]
-#   before_script:
-#     - echo "Logging into registry ${CI_REGISTRY}"
-#     - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
-#   script:
-#     - cd frontend
-#     - echo "Building frontend Docker image"
-#     - docker build -t ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA} .
-#     - docker tag ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/e4l-frontend:latest
-#     - echo "Pushing frontend image with tag ${CI_COMMIT_SHA}"
-#     - docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA}
-#     - docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:latest
-#   needs:
-#     - frontend_build
-#     - frontend_unit_test
+frontend_image:
+  stage: image
+  image: docker:24-cli
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  before_script:
+    - echo "Logging into registry ${CI_REGISTRY}"
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+  script:
+    - cd frontend
+    - echo "Building frontend Docker image"
+    - docker build -t ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA} .
+    - docker tag ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/e4l-frontend:latest
+    - echo "Pushing frontend image with tag ${CI_COMMIT_SHA}"
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA}
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:latest
+  needs:
+    - frontend_build
+    - frontend_unit_test

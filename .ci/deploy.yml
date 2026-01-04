@@ -86,10 +86,9 @@ deploy_staging:
     - echo "Frontend available at http://192.168.56.10:3001"
     - echo "Backend available at http://192.168.56.10:8081"
     - echo "Database available at 192.168.56.10:3307"
-  # TEMPORARILY DISABLED for faster integration test debugging
-  # needs:
-  #   - backend_image
-  #   - frontend_image
+  needs:
+    - backend_image
+    - frontend_image
   environment:
     name: staging
     url: http://192.168.56.10:3001
