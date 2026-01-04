@@ -89,15 +89,15 @@ frontend_integration_test:
       fi
       
       echo "All services are running"
-    - echo "Waiting for backend readiness..."
+    - echo "Waiting for backend readiness (actuator)..."
     - >
       READY=
-      ; for i in $(seq 1 30); do
-        if curl -sf http://backend:8080/e4lapi/questionnaire > /dev/null 2>&1; then READY=1; break; fi;
+      ; for i in $(seq 1 60); do
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -sf http://backend:8080/e4lapi/actuator/health > /dev/null 2>&1; then READY=1; break; fi;
         sleep 2;
       done
       ; if [ -z "$READY" ]; then
-        echo "ERROR: Backend did not become ready after 30 attempts";
+        echo "ERROR: Backend did not become ready after 60 attempts (120s)";
         docker-compose logs backend;
         exit 1;
       fi
