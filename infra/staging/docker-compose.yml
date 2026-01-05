@@ -43,8 +43,9 @@ services:
       - SIGNATURE_KEY=${SIGNATURE_KEY:-staging-signature-key-2025}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@e4l.lu}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      - RESOURCES_STATIC_URL=http://localhost:8081/e4lapi/
-      - DEV_RESOURCES_STATIC_URL=http://localhost:8081/e4lapi/
+      - RESOURCES_STATIC_URL=http://192.168.56.10:8081/e4lapi/
+      - DEV_RESOURCES_STATIC_URL=http://192.168.56.10:8081/e4lapi/
+      - CORS_ALLOWED_ORIGINS=http://192.168.56.10:3001
       - TZ=Europe/Luxembourg
     depends_on:
       - db
@@ -64,6 +65,7 @@ services:
       - "3001:80"
     environment:
       - BACKEND_URL=http://backend:8080
+      - PUBLIC_PATH=
     depends_on:
       - backend
     networks:

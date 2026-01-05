@@ -1,0 +1,149 @@
+# ============================================================
+# Frontend CI Jobs
+# ============================================================
+# Owner: Maksym (Frontend) / Integration: Michal (Infrastructure)
+#
+# This file defines frontend build, test, and image creation jobs.
+# It is included by the root .gitlab-ci.yml pipeline orchestration.
+#
+# Jobs:
+#   - frontend_build: Compile frontend using Webpack
+#   - frontend_unit_test: Run unit tests
+#   - frontend_image: Build and push Docker image to registry
+#
+# Deployment is handled separately in .ci/deploy.yml
+# ============================================================
+
+# Build frontend application
+frontend_build:
+  stage: build
+  image: node:18-alpine
+  script:
+    - cd frontend/frontend_code
+    - npm ci
+    - echo "Building frontend with Webpack"
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/frontend_code/e4l.frontend.docker/web/dist/
+    expire_in: 1 hour
+
+# Run frontend unit tests
+frontend_unit_test:
+  stage: unit_test
+  image: node:18-alpine
+  script:
+    - cd frontend/frontend_code
+    - npm ci
+    - echo "Running frontend unit tests (unit tests only)"
+    - npm run test:unit
+  artifacts:
+    when: always
+    paths:
+      - frontend/frontend_code/__tests__/
+  dependencies:
+    - frontend_build
+
+# Run frontend integration tests with full stack alive during tests
+frontend_integration_test:
+  stage: integration_test
+  image: node:18-alpine
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  variables:
+    COMPOSE_PROJECT_NAME: frontendint
+  script:
+    - apk add --no-cache docker docker-compose bash curl
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+    - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
+    - export FRONTEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA}"
+    - cd infra/staging
+    - docker-compose down || true
+    - docker-compose pull
+    - docker-compose up -d
+    - echo "Checking service health..."
+    - docker-compose ps
+    - |
+      # Check if all services are running
+      BACKEND_UP=$(docker-compose ps backend | grep -c "Up")
+      FRONTEND_UP=$(docker-compose ps frontend | grep -c "Up")
+      DB_UP=$(docker-compose ps db | grep -c "Up")
+      
+      if [ "$BACKEND_UP" != "1" ]; then
+        echo "ERROR: Backend service failed to start"
+        docker-compose logs backend
+        exit 1
+      fi
+      
+      if [ "$FRONTEND_UP" != "1" ]; then
+        echo "ERROR: Frontend service failed to start"
+        docker-compose logs frontend
+        exit 1
+      fi
+      
+      if [ "$DB_UP" != "1" ]; then
+        echo "ERROR: Database service failed to start"
+        docker-compose logs db
+        exit 1
+      fi
+      
+      echo "All services are running"
+    - echo "Waiting for backend readiness..."
+    - >
+      READY=
+      ; for i in $(seq 1 90); do
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -s http://backend:8080/e4lapi/ | grep -q ""; then READY=1; echo "Backend ready after $i attempts (endpoint: /e4lapi/)"; break; fi;
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -s http://backend:8080/e4lapi/questionnaire | grep -q ""; then READY=1; echo "Backend ready after $i attempts (endpoint: /e4lapi/questionnaire)"; break; fi;
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -s http://backend:8080/e4lapi/login | grep -q ""; then READY=1; echo "Backend ready after $i attempts (endpoint: /e4lapi/login)"; break; fi;
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -s http://backend:8080/health | grep -q ""; then READY=1; echo "Backend ready after $i attempts (endpoint: /health)"; break; fi;
+        sleep 2;
+      done
+      ; if [ -z "$READY" ]; then
+        echo "ERROR: Backend did not become ready after 90 attempts (180s)";
+        echo "Checking backend connectivity...";
+        docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -v http://backend:8080/e4lapi/ || true;
+        docker-compose logs backend;
+        exit 1;
+      fi
+    - |
+      docker run --rm \
+        --network ${COMPOSE_PROJECT_NAME}_staging-network \
+        -v "$CI_PROJECT_DIR/frontend/frontend_code":/workspace \
+        -w /workspace \
+        node:18-alpine \
+        sh -c "apk add --no-cache curl && npm ci && BACKEND_URL=http://backend:8080/e4lapi npm run test:integration"
+  after_script:
+    - cd infra/staging
+    - docker-compose down || true
+  artifacts:
+    when: always
+    paths:
+      - frontend/frontend_code/__tests__/
+  needs:
+    - backend_image
+    - frontend_image
+    - deploy_staging
+  allow_failure: false
+
+# Build and push frontend Docker image
+frontend_image:
+  stage: image
+  image: docker:24-cli
+  services:
+    - name: docker:24-dind
+      command: ["--insecure-registry=192.168.56.10:5050"]
+  before_script:
+    - echo "Logging into registry ${CI_REGISTRY}"
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+  script:
+    - cd frontend
+    - echo "Building frontend Docker image"
+    - docker build -t ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA} .
+    - docker tag ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA} ${CI_REGISTRY_IMAGE}/e4l-frontend:latest
+    - echo "Pushing frontend image with tag ${CI_COMMIT_SHA}"
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:${CI_COMMIT_SHA}
+    - docker push ${CI_REGISTRY_IMAGE}/e4l-frontend:latest
+  needs:
+    - frontend_build
+    - frontend_unit_test
