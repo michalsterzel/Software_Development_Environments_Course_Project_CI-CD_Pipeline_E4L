@@ -166,22 +166,20 @@ deploy_prod:
     - echo "Frontend image - ${FRONTEND_IMAGE}"
     - echo "Deploying full stack to production environment"
     - cd infra/prod
-    - docker compose down || true
     - docker compose pull
-    - docker compose up -d
-    - echo "Waiting for services to stabilize"
-    - sleep 20
+    - docker compose up -d --wait
+    - echo "Services started; waited on health checks"
     - docker compose ps
     - echo "=== Production Deployment Complete ==="
-    - echo "Frontend available at http://192.168.56.10:3002"
-    - echo "Backend available at http://192.168.56.10:8082"
-    - echo "Database available at 192.168.56.10:3308"
+    - echo "Frontend available at http://192.168.56.10:9002"
+    - echo "Backend available at http://192.168.56.10:9082"
+    - echo "Database available at 192.168.56.10:9308"
   needs:
     - deploy_staging
   when: manual
   environment:
     name: production
-    url: http://192.168.56.10:3002
+    url: http://192.168.56.10:9002
 #     - sleep 20
 #     - docker compose ps
 #     - echo ""
