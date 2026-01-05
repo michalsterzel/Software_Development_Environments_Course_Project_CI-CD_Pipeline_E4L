@@ -73,7 +73,7 @@ STEP 2: Start the Virtual Machine
 ----------------------------------
 
 1. From the project root directory, run:
-   
+
    vagrant up
 
 2. This will:
@@ -92,6 +92,12 @@ STEP 2: Start the Virtual Machine
 4. Wait for completion
    - GitLab initialization takes up to ~10 minutes after VM boots
    - Watch for "VM Provisioning Complete!" message
+
+If something breaks during installation cancel the process and run:
+   vagrant reload
+
+In the case something breaks during provisioning cancel the process and run:
+   vagrant provision
 
 
 STEP 3: Access GitLab
@@ -148,9 +154,6 @@ STEP 5: Push Project Code to GitLab
 3. Push all branches to GitLab:
    
    git push gitlab main
-   git push gitlab production-deploy
-
-   (Use branches that exist in your repository)
 
 4. When prompted for credentials:
    - Username: root
@@ -190,6 +193,10 @@ STEP 6: Register GitLab Runner
 9. Configure the runner for privileged mode:
    
    sudo nano /etc/gitlab-runner/config.toml
+
+   or if the config does not exist there do:
+
+   sudo nano /home/vagrant/.gitlab-runner/config.toml
 
 10. Find the line containing:
     

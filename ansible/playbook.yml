@@ -51,6 +51,16 @@
         state: started
         enabled: yes
 
+    - name: Configure Docker daemon for insecure registry
+      copy:
+        content: |
+          {
+            "insecure-registries": ["192.168.56.10:5050"]
+          }
+        dest: /etc/docker/daemon.json
+        mode: '0644'
+      notify: Restart Docker
+
     - name: Add vagrant user to docker group
       user:
         name: vagrant
@@ -195,3 +205,9 @@
           3. Login to GitLab and create your project
           4. Register GitLab Runner with your project
           ============================================
+
+  handlers:
+    - name: Restart Docker
+      systemd:
+        name: docker
+        state: restarted
