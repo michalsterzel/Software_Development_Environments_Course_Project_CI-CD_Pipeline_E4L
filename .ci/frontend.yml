@@ -89,18 +89,20 @@ frontend_integration_test:
       fi
       
       echo "All services are running"
-    - echo "Waiting for backend readiness (actuator)..."
+    - echo "Waiting for backend readiness..."
     - >
       READY=
       ; for i in $(seq 1 90); do
-        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -sf http://backend:8080/e4lapi/actuator/health > /dev/null 2>&1; then READY=1; echo "Backend ready after $i attempts"; break; fi;
-        echo "Attempt $i/90 - waiting for backend...";
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -s http://backend:8080/e4lapi/ | grep -q ""; then READY=1; echo "Backend ready after $i attempts (endpoint: /e4lapi/)"; break; fi;
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -s http://backend:8080/e4lapi/questionnaire | grep -q ""; then READY=1; echo "Backend ready after $i attempts (endpoint: /e4lapi/questionnaire)"; break; fi;
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -s http://backend:8080/e4lapi/login | grep -q ""; then READY=1; echo "Backend ready after $i attempts (endpoint: /e4lapi/login)"; break; fi;
+        if docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -s http://backend:8080/health | grep -q ""; then READY=1; echo "Backend ready after $i attempts (endpoint: /health)"; break; fi;
         sleep 2;
       done
       ; if [ -z "$READY" ]; then
         echo "ERROR: Backend did not become ready after 90 attempts (180s)";
-        echo "Checking if actuator endpoint exists...";
-        docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -v http://backend:8080/e4lapi/actuator/health || true;
+        echo "Checking backend connectivity...";
+        docker run --rm --network ${COMPOSE_PROJECT_NAME}_staging-network curlimages/curl:8.4.0 -v http://backend:8080/e4lapi/ || true;
         docker-compose logs backend;
         exit 1;
       fi
