@@ -1,0 +1,575 @@
+================================================================================
+E4L PLATFORM - DEPLOYMENT PIPELINE SCENARIOS
+================================================================================
+
+This document contains detailed scenarios demonstrating the correct functioning
+of the CI/CD deployment pipeline. Each scenario includes initial state, exact
+steps to reproduce, expected pipeline behavior, and expected outcomes.
+
+
+SCENARIO 1: SUCCESSFUL END-TO-END DEPLOYMENT
+================================================================================
+
+OBJECTIVE:
+----------
+Demonstrate a complete successful pipeline execution from code commit through
+automated staging deployment and manual production promotion.
+
+
+INITIAL STATE:
+--------------
+- VM is running and all services (GitLab, Runner, Docker) are operational
+- GitLab project 'E4L' exists with all code pushed
+- GitLab Runner is registered, online, and configured with privileged=true
+- No containers are currently running in staging or production environments
+- Previous pipeline runs (if any) have completed
+
+
+STEPS TO EXECUTE:
+-----------------
+
+Step 1: Prepare a Code Change
+   
+   On the host machine, navigate to the project root directory:
+   
+   cd C:\Users\gracz\Desktop\DevOpsProject
+
+   Create a trivial change to trigger the pipeline:
+   
+   echo "// Pipeline test" >> backend/backend_code/src/main/java/lu/uni/e4l/platform/E4lApplication.java
+
+   OR use an empty commit:
+   
+   git commit --allow-empty -m "Test complete pipeline execution"
+
+
+Step 2: Push to GitLab
+   
+   git add .
+   git commit -m "Trigger end-to-end pipeline test"
+   git push gitlab main
+
+   Enter credentials when prompted:
+   - Username: root
+   - Password: (your GitLab password)
+
+
+Step 3: Monitor Pipeline in GitLab UI
+   
+   1. Open browser to http://localhost:8080
+   2. Navigate to: Build → Pipelines
+   3. Click on the newest pipeline (should show "running")
+   4. Observe the pipeline stages executing in sequence
+
+
+Step 4: Wait for Automated Stages to Complete
+   
+   The following stages will execute automatically:
+   
+   Stage 1: BUILD (duration: ~2-3 minutes)
+      - backend_build: Compiles Spring Boot application
+      - frontend_build: Builds React application with Webpack
+      Expected: Both jobs show green checkmark
+   
+   Stage 2: UNIT_TEST (duration: ~1-2 minutes)
+      - backend_unit_test: Runs JUnit tests
+      - frontend_unit_test: Runs Jest tests
+      Expected: Both jobs pass, test reports available as artifacts
+   
+   Stage 3: IMAGE (duration: ~3-5 minutes)
+      - backend_image: Builds and pushes backend Docker image
+      - frontend_image: Builds and pushes frontend Docker image
+      Expected: Images tagged with commit SHA pushed to registry
+   
+   Stage 4: DEPLOY_STAGING (duration: ~1-2 minutes)
+      - deploy_staging: Pulls images and starts staging environment
+      Expected: Job logs show "Deployment Complete" message
+                Outputs staging URLs:
+                - Frontend: http://192.168.56.10:3001
+                - Backend: http://192.168.56.10:8081
+   
+   Stage 5: INTEGRATION_TEST (duration: ~2-4 minutes)
+      - backend_integration_test: Runs integration tests against staging
+      - frontend_integration_test: Runs E2E tests against staging
+      Expected: Both jobs pass, verifying full stack functionality
+
+
+Step 5: Verify Staging Deployment
+   
+   While integration tests are running, verify staging is accessible:
+   
+   Open browser tabs:
+   - http://192.168.56.10:3001  (Frontend UI should load)
+   - http://192.168.56.10:8081/e4lapi/questionnaire (Backend API returns JSON)
+   
+   Verify containers are running in VM:
+   
+   vagrant ssh -c "cd /vagrant/infra/staging && docker compose ps"
+   
+   Expected output shows 3 containers:
+   - staging-frontend-1 (Up)
+   - staging-backend-1 (Up)
+   - staging-db (Up)
+
+
+Step 6: Manually Trigger Production Deployment
+   
+   After all automated stages pass:
+   
+   1. In GitLab pipeline view, scroll to DEPLOY_PROD stage
+   2. Click the "Play" button (▶) next to deploy_prod job
+   3. Confirm the manual action
+   4. Wait for job to complete (~2-3 minutes)
+   
+   Expected: Job shows green checkmark, logs display:
+   - "Production Deployment Complete"
+   - Frontend: http://192.168.56.10:9002
+   - Backend: http://192.168.56.10:9082
+
+
+Step 7: Actually Deploy Production (Manual Script)
+   
+   IMPORTANT: Due to Docker-in-Docker limitations, the deploy_prod job
+   validates the deployment but does not persist containers on the VM host.
+   
+   Execute the production deployment script:
+   
+   vagrant ssh -c "bash /vagrant/start_production.sh"
+   
+   Expected output:
+   === Manual Production Deployment ===
+   Using images tagged with: latest
+   Backend image: 192.168.56.10:5050/root/e4l/e4l-backend:latest
+   Frontend image: 192.168.56.10:5050/root/e4l/e4l-frontend:latest
+   Pulling latest images...
+   [progress messages]
+   Starting production stack...
+   [container creation messages]
+   
+   === Production Started Successfully ===
+   Frontend: http://192.168.56.10:9002
+   Backend:  http://192.168.56.10:9082
+   Database: 192.168.56.10:9308
+
+
+Step 8: Verify Production Deployment
+   
+   Verify containers are running:
+   
+   vagrant ssh -c "cd /vagrant/infra/prod && docker compose ps"
+   
+   Expected: 3 containers in healthy state:
+   - prod-frontend-1 (Up, healthy)
+   - prod-backend-1 (Up, healthy)
+   - prod-db (Up, healthy)
+   
+   Access production endpoints:
+   - http://192.168.56.10:9002 (Frontend loads correctly)
+   - http://192.168.56.10:9082/e4lapi/questionnaire (Backend returns data)
+
+
+EXPECTED OUTCOME:
+-----------------
+✓ Pipeline completes all automated stages successfully
+✓ Staging environment deploys automatically and passes integration tests
+✓ Production deployment job validates successfully
+✓ Production environment is manually deployed and accessible
+✓ Both staging and production environments run simultaneously on different ports
+✓ Application functions correctly in both environments
+✓ Database data is isolated between staging (e4l_staging) and production (e4l_prod)
+
+TOTAL DURATION: Approximately 12-18 minutes from commit to production
+
+
+================================================================================
+SCENARIO 2: FAILED UNIT TEST PREVENTS DEPLOYMENT
+================================================================================
+
+OBJECTIVE:
+----------
+Demonstrate that the pipeline correctly prevents progression when unit tests
+fail, blocking image builds and deployments to protect environment integrity.
+
+
+INITIAL STATE:
+--------------
+- VM is running, GitLab and Runner are operational
+- Previous successful pipeline exists (from Scenario 1 or prior work)
+- Staging and/or production environments may be running from previous deployment
+
+
+STEPS TO EXECUTE:
+-----------------
+
+Step 1: Introduce a Failing Test
+   
+   On the host machine, navigate to the project:
+   
+   cd C:\Users\gracz\Desktop\DevOpsProject
+
+   Modify a backend test to fail intentionally. Open:
+   
+   backend/backend_code/src/test/java/lu/uni/e4l/platform/service/QuestionServiceTest.java
+
+   Find any test method (e.g., testCreateQuestion) and add:
+   
+   @Test
+   public void testIntentionalFailure() {
+       // This test will intentionally fail
+       assertEquals("Expected", "Actual");
+   }
+
+   Save the file.
+
+
+Step 2: Commit and Push the Change
+   
+   git add backend/backend_code/src/test/java/lu/uni/e4l/platform/service/QuestionServiceTest.java
+   git commit -m "Add failing test to demonstrate pipeline protection"
+   git push gitlab main
+
+
+Step 3: Monitor Pipeline Execution
+   
+   1. Open GitLab UI: http://localhost:8080
+   2. Navigate to: Build → Pipelines
+   3. Click on the new pipeline
+   4. Watch the stages execute
+
+
+Step 4: Observe Build Stage Success
+   
+   Stage 1: BUILD
+      - backend_build: Completes successfully (compilation works)
+      - frontend_build: Completes successfully (frontend unaffected)
+   
+   Expected: Both jobs show green checkmarks
+   Duration: ~2-3 minutes
+
+
+Step 5: Observe Unit Test Failure
+   
+   Stage 2: UNIT_TEST
+      - backend_unit_test: FAILS ❌
+      - frontend_unit_test: PASSES ✓
+   
+   Click on backend_unit_test job to view logs:
+   
+   Expected log content:
+   - Gradle runs tests
+   - Test failure reported:
+     "QuestionServiceTest > testIntentionalFailure FAILED
+      org.opentest4j.AssertionFailedError: expected: <Expected> but was: <Actual>"
+   - Exit code 1
+   - Job status: FAILED (red X)
+
+
+Step 6: Observe Pipeline Halt
+   
+   After backend_unit_test fails:
+   
+   Stage 3: IMAGE
+      - backend_image: Shows gray "blocked" icon (not executed)
+      - frontend_image: Shows gray "blocked" icon (not executed)
+   
+   Stage 4: DEPLOY_STAGING
+      - deploy_staging: Shows gray "blocked" icon (not executed)
+   
+   All subsequent stages (INTEGRATION_TEST, DEPLOY_PROD):
+      - Blocked, not executed
+   
+   Pipeline overall status: FAILED ❌
+
+
+Step 7: Verify Environments Remain Unchanged
+   
+   Check staging environment:
+   
+   vagrant ssh -c "cd /vagrant/infra/staging && docker compose ps"
+   
+   Expected: Either no containers running, OR containers from previous
+            successful deployment still running (not updated with broken code)
+   
+   Check production environment:
+   
+   vagrant ssh -c "cd /vagrant/infra/prod && docker compose ps"
+   
+   Expected: Production remains at last known good state, unaffected by failure
+
+
+Step 8: Fix the Test and Re-run
+   
+   Remove or fix the failing test:
+   
+   Edit backend/backend_code/src/test/java/lu/uni/e4l/platform/service/QuestionServiceTest.java
+   
+   Delete the testIntentionalFailure method or fix the assertion:
+   
+   assertEquals("Actual", "Actual");  // Now passes
+   
+   Commit and push:
+   
+   git add backend/backend_code/src/test/java/lu/uni/e4l/platform/service/QuestionServiceTest.java
+   git commit -m "Fix failing test"
+   git push gitlab main
+   
+   New pipeline will trigger and should complete successfully.
+
+
+EXPECTED OUTCOME:
+-----------------
+✓ Pipeline executes build stage successfully
+✓ Unit test failure is detected in UNIT_TEST stage
+✓ Pipeline immediately halts at the failed stage
+✓ No Docker images are built (IMAGE stage blocked)
+✓ No deployment occurs (DEPLOY_STAGING blocked)
+✓ Staging and production environments remain in last known good state
+✓ GitLab UI clearly indicates failure with red status
+✓ Test logs are available for debugging
+✓ After fix, pipeline runs successfully from start to finish
+
+KEY INSIGHT:
+This demonstrates that the pipeline acts as a quality gate, preventing broken
+code from reaching deployment stages and protecting environment integrity.
+
+
+================================================================================
+SCENARIO 3: MANUAL PRODUCTION PROMOTION WITH VALIDATION
+================================================================================
+
+OBJECTIVE:
+----------
+Demonstrate the manual approval gate for production deployment, showing that
+production deployment is intentionally human-controlled while staging is
+automatic, representing a realistic deployment workflow.
+
+
+INITIAL STATE:
+--------------
+- VM is running, all services operational
+- A successful pipeline has completed through integration tests
+- Staging environment is running with the latest tested code
+- Production environment is either empty or running previous version
+- The deploy_prod job is waiting for manual trigger
+
+
+STEPS TO EXECUTE:
+-----------------
+
+Step 1: Ensure Staging is Deployed and Tested
+   
+   From a previous successful pipeline (or run Scenario 1 up to integration tests):
+   
+   1. Verify pipeline reached INTEGRATION_TEST stage and passed
+   2. Verify staging is accessible:
+      - http://192.168.56.10:3001 (Frontend)
+      - http://192.168.56.10:8081/e4lapi/questionnaire (Backend)
+   
+   Manually test staging functionality:
+   - Load frontend, navigate through UI
+   - Verify backend API responds correctly
+   - Check logs: vagrant ssh -c "cd /vagrant/infra/staging && docker compose logs backend"
+
+
+Step 2: Review Pipeline Status Before Promotion
+   
+   In GitLab UI, navigate to the pipeline:
+   
+   1. All previous stages show green checkmarks:
+      ✓ BUILD
+      ✓ UNIT_TEST
+      ✓ IMAGE
+      ✓ DEPLOY_STAGING
+      ✓ INTEGRATION_TEST
+   
+   2. DEPLOY_PROD stage shows:
+      - deploy_prod job with "Play" button (▶)
+      - Status: manual action required
+      - No automatic execution
+
+
+Step 3: Document Current Production State (if running)
+   
+   Before promotion, check what's currently in production:
+   
+   vagrant ssh -c "cd /vagrant/infra/prod && docker compose ps"
+   
+   If containers are running, note the image tags:
+   
+   vagrant ssh -c "cd /vagrant/infra/prod && docker compose images"
+   
+   This represents the "last known good" production state.
+
+
+Step 4: Make Promotion Decision
+   
+   Review criteria for production promotion:
+   
+   ✓ All automated tests passed
+   ✓ Integration tests validated full stack
+   ✓ Staging environment verified manually
+   ✓ No errors in staging logs
+   ✓ Stakeholders approve deployment
+   
+   Simulated approval: "Proceed with production deployment"
+
+
+Step 5: Trigger Production Deployment Job
+   
+   In GitLab pipeline view:
+   
+   1. Scroll to DEPLOY_PROD stage
+   2. Click the "Play" button (▶) next to deploy_prod
+   3. Observe job status change to "running"
+   4. Wait for job to complete (~2-3 minutes)
+   
+   Expected job log output:
+   === Full Stack Production Deployment ===
+   Backend image - 192.168.56.10:5050/root/e4l/e4l-backend:[COMMIT_SHA]
+   Frontend image - 192.168.56.10:5050/root/e4l/e4l-frontend:[COMMIT_SHA]
+   Deploying full stack to production environment
+   [Docker login and pull messages]
+   [Docker compose up messages]
+   Services started; waited on health checks
+   === Production Deployment Complete ===
+   Frontend available at http://192.168.56.10:9002
+   Backend available at http://192.168.56.10:9082
+   
+   Job status: Passed ✓
+
+
+Step 6: Execute Manual Production Deployment Script
+   
+   As explained in README, the deploy_prod job validates but doesn't persist
+   containers due to Docker-in-Docker. Execute the deployment script:
+   
+   vagrant ssh -c "bash /vagrant/start_production.sh"
+   
+   Expected: Script pulls images and starts containers successfully
+
+
+Step 7: Verify Production Deployment
+   
+   Confirm production containers are running:
+   
+   vagrant ssh -c "cd /vagrant/infra/prod && docker compose ps"
+   
+   Expected: All containers healthy
+   
+   Check that correct images are deployed (matching staging):
+   
+   vagrant ssh -c "cd /vagrant/infra/prod && docker compose images"
+   
+   Expected: Image tags match those tested in staging
+
+
+Step 8: Validate Production Functionality
+   
+   Access production endpoints:
+   
+   1. Frontend: http://192.168.56.10:9002
+      - Should load correctly
+      - Test basic navigation
+   
+   2. Backend: http://192.168.56.10:9082/e4lapi/questionnaire
+      - Should return JSON data
+      - Response structure matches staging
+   
+   Compare production vs staging responses to ensure parity.
+
+
+Step 9: Confirm Both Environments Coexist
+   
+   Verify staging and production run simultaneously:
+   
+   vagrant ssh -c "docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}'"
+   
+   Expected: See containers for both environments:
+   - staging-backend-1 (port 8081)
+   - staging-frontend-1 (port 3001)
+   - staging-db (port 3307)
+   - prod-backend-1 (port 9082)
+   - prod-frontend-1 (port 9002)
+   - prod-db (port 9308)
+
+
+Step 10: Review Pipeline Completion
+   
+   In GitLab, the pipeline now shows:
+   
+   ✓ BUILD
+   ✓ UNIT_TEST
+   ✓ IMAGE
+   ✓ DEPLOY_STAGING
+   ✓ INTEGRATION_TEST
+   ✓ DEPLOY_PROD (manually triggered and completed)
+   
+   Overall status: PASSED ✓
+
+
+EXPECTED OUTCOME:
+-----------------
+✓ Production deployment requires explicit manual approval (Play button)
+✓ Production is not automatically deployed after integration tests
+✓ Operator can review staging before promoting to production
+✓ deploy_prod job validates the deployment process
+✓ Manual script successfully deploys to production on VM host
+✓ Production uses the exact same images that passed staging tests
+✓ Staging and production coexist without conflict
+✓ Production environment is accessible and functional
+✓ Deployment follows a controlled, human-approved workflow
+
+KEY INSIGHT:
+The manual gate represents a realistic production workflow where human
+oversight is required before deploying to live environments, even when all
+automated quality checks have passed.
+
+
+================================================================================
+ADDITIONAL VALIDATION SCENARIOS (Optional)
+================================================================================
+
+Scenario 4: Frontend Integration Test Failure
+----------------------------------------------
+1. Modify frontend code to break API communication
+2. Push commit
+3. Pipeline progresses through BUILD, UNIT_TEST, IMAGE, DEPLOY_STAGING
+4. frontend_integration_test fails when testing against staging
+5. Pipeline halts at INTEGRATION_TEST stage
+6. Production deployment blocked
+7. Staging contains broken deployment, production remains stable
+
+
+Scenario 5: Parallel Feature Branches
+--------------------------------------
+1. Create a feature branch: git checkout -b feature/new-endpoint
+2. Make changes, push to GitLab
+3. Pipeline runs on feature branch independently
+4. Verify pipeline executes but does not deploy (no manual prod trigger needed)
+5. Merge to main after tests pass
+6. Main pipeline runs and deploys to staging
+7. Demonstrates branch isolation in CI/CD
+
+
+================================================================================
+NOTES ON REPRODUCIBILITY
+================================================================================
+
+1. Scenario outcomes may vary slightly based on:
+   - System resources (pipeline duration)
+   - Network speed (image pull times)
+   - Prior cache state (first run slower)
+
+2. To reset environment between scenarios:
+   - Stop all containers: vagrant ssh -c "docker stop $(docker ps -aq)"
+   - Remove containers: vagrant ssh -c "docker rm $(docker ps -aq)"
+   - Or restart VM: vagrant reload
+
+3. Pipeline logs and job artifacts are retained in GitLab for review
+
+4. All scenarios assume the VM and GitLab services are operational and
+   the runner is online and properly configured
+
+================================================================================
+END OF SCENARIOS
+================================================================================
