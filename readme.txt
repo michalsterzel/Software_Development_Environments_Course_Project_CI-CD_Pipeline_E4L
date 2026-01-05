@@ -176,7 +176,7 @@ STEP 6: Register GitLab Runner
    - Check "Run untagged jobs"
    - Click "Create runner"
 
-5. Copy the registration command shown in Step 1 (starts with gitlab-runner register)
+5. Copy the registration command shown in Step 1 (starts with gitlab-runner register) but add sudo in the begginning of it
 
 6. SSH into the VM:
    
@@ -196,7 +196,7 @@ STEP 6: Register GitLab Runner
 
    or if the config does not exist there do:
 
-   sudo nano /home/vagrant/.gitlab-runner/config.toml
+   sudo nano /home/vagrant/.gitlab-runner/config.toml and copy the config from there
 
 10. Find the line containing:
     
