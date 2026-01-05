@@ -68,6 +68,8 @@ deploy_staging:
       command: ["--insecure-registry=192.168.56.10:5050"]
   before_script:
     - apk add --no-cache docker-compose bash curl
+    - echo "Logging into registry ${CI_REGISTRY}"
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - echo "=== Full Stack Staging Deployment ==="
     - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
@@ -158,6 +160,8 @@ deploy_prod:
       command: ["--insecure-registry=192.168.56.10:5050"]
   before_script:
     - apk add --no-cache docker-compose bash curl
+    - echo "Logging into registry ${CI_REGISTRY}"
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
   script:
     - echo "=== Full Stack Production Deployment ==="
     - export BACKEND_IMAGE="${CI_REGISTRY_IMAGE}/e4l-backend:${CI_COMMIT_SHA}"
